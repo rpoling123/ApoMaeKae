@@ -26,6 +26,15 @@ function serveFile(res,file){try{const ext=path.extname(file);const type=ext==='
 const server=http.createServer(async(req,res)=>{
   try{
     const u=new URL(req.url,'http://localhost');
+
+// Serve website and background image
+if (req.method === 'GET' && (u.pathname === '/' || u.pathname === '/index.html')) {
+  return serveFile(res, 'index.html');
+}
+if (req.method === 'GET' && u.pathname === '/apomaekae_bg.jpg') {
+  return serveFile(res, 'apomaekae_bg.jpg');
+}
+
     if(req.method==='GET'&&u.pathname==='/api/health')return send(res,200,{ok:true,serverTime:Date.now()});
     if(req.method==='GET'&&u.pathname==='/')return serveFile(res,path.join(PUBLIC,'index.html'));
 
