@@ -21,7 +21,25 @@ function dateMs(v){const t=new Date(v).getTime();return Number.isFinite(t)?t:0;}
 function send(res,status,obj){const body=JSON.stringify(obj);res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});res.end(body);}
 function authorized(req){const a=Buffer.from(req.headers['x-admin-token']||'');const b=Buffer.from(ADMIN_TOKEN);return a.length===b.length&&crypto.timingSafeEqual(a,b);}
 function body(req){return new Promise((resolve,reject)=>{let s='';req.on('data',c=>{s+=c;if(s.length>32768)req.destroy();});req.on('end',()=>{try{resolve(s?JSON.parse(s):{});}catch(e){reject(e);}});req.on('error',reject);});}
-function serveFile(res,file){try{const ext=path.extname(file);const type=ext==='.html'?'text/html; charset=utf-8':'application/octet-stream';res.writeHead(200,{'Content-Type':type});res.end(fs.readFileSync(file));}catch{send(res,404,{error:'not found'});}}
+function serveFile(res,file){
+  try{
+    const data=fs.readFileSync(file);
+    const ext=path.extname(file).toLowerCase();
+    const type=ext==='.html'
+      ? 'text/html; charset=utf-8'
+      : ext==='.jpg'||ext==='.jpeg'
+        ? 'image/jpeg'
+        : ext==='.png'
+          ? 'image/png'
+          : 'application/octet-stream';
+    res.writeHead(200,{'Content-Type':type,'Cache-Control':'no-store'});
+    return res.end(data);
+  }catch(e){
+    console.error('serveFile error:',file,e.message);
+    if(!res.headersSent) return send(res,404,{error:'not found'});
+    return;
+  }
+}
 
 const server=http.createServer(async(req,res)=>{
   try{
@@ -36,8 +54,6 @@ if (req.method === 'GET' && u.pathname === '/apomaekae_bg.jpg') {
 }
 
     if(req.method==='GET'&&u.pathname==='/api/health')return send(res,200,{ok:true,serverTime:Date.now()});
-    if(req.method==='GET'&&u.pathname==='/')return serveFile(res,path.join(PUBLIC,'index.html'));
-
     if(u.pathname==='/api/license/check'&&req.method==='POST'){
       const b=await body(req),key=keyNorm(b.key),deviceId=String(b.deviceId||'').trim(),now=Date.now(),db=readDb(),lic=db.keys[key];
       if(!key||!deviceId)return send(res,400,{active:false,message:'ต้องมี key และ deviceId',serverTime:now});
