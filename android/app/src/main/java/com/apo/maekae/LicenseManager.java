@@ -1,3 +1,5 @@
+https://apomaekae-2.onrender.com/api/license/check
+
 package com.apo.maekae;
 
 import android.content.Context;
