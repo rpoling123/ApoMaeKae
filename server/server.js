@@ -47,7 +47,7 @@ const server=http.createServer(async(req,res)=>{
 
 // Serve website and background image
 if (req.method === 'GET' && (u.pathname === '/' || u.pathname === '/index.html')) {
-  return serveFile(res, 'index.html');
+  return serveFile(res, path.join(PUBLIC, 'index.html'));
 }
 if (req.method === 'GET' && u.pathname === '/apomaekae_bg.jpg') {
   return serveFile(res, 'apomaekae_bg.jpg');
