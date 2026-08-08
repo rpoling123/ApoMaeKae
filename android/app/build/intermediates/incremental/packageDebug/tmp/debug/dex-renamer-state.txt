@@ -1,0 +1,7 @@
+#Sat Aug 08 12:06:42 UTC 2026
+base.0=/home/rpoling123/ApoMaeKae_V8.3_Complete/android/app/build/intermediates/dex/debug/mergeProjectDexDebug/0/classes.dex
+base.1=/home/rpoling123/ApoMaeKae_V8.3_Complete/android/app/build/intermediates/dex/debug/mergeProjectDexDebug/7/classes.dex
+path.0=0/classes.dex
+path.1=7/classes.dex
+renamed.0=classes.dex
+renamed.1=classes2.dex

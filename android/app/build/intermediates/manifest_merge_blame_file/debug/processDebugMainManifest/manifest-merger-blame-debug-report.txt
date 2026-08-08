@@ -1,0 +1,70 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="com.apo.maekae"
+4    android:versionCode="83"
+5    android:versionName="8.3" >
+6
+7    <uses-sdk
+8        android:minSdkVersion="26"
+9        android:targetSdkVersion="35" />
+10
+11    <uses-permission android:name="android.permission.INTERNET" />
+11-->/home/rpoling123/ApoMaeKae_V8.3_Complete/android/app/src/main/AndroidManifest.xml:3:5-67
+11-->/home/rpoling123/ApoMaeKae_V8.3_Complete/android/app/src/main/AndroidManifest.xml:3:22-64
+12    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+12-->/home/rpoling123/ApoMaeKae_V8.3_Complete/android/app/src/main/AndroidManifest.xml:5:5-79
+12-->/home/rpoling123/ApoMaeKae_V8.3_Complete/android/app/src/main/AndroidManifest.xml:5:22-76
+13    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+13-->/home/rpoling123/ApoMaeKae_V8.3_Complete/android/app/src/main/AndroidManifest.xml:6:5-81
+13-->/home/rpoling123/ApoMaeKae_V8.3_Complete/android/app/src/main/AndroidManifest.xml:6:22-78
+14    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+14-->/home/rpoling123/ApoMaeKae_V8.3_Complete/android/app/src/main/AndroidManifest.xml:7:5-77
+14-->/home/rpoling123/ApoMaeKae_V8.3_Complete/android/app/src/main/AndroidManifest.xml:7:22-74
+15    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+15-->/home/rpoling123/ApoMaeKae_V8.3_Complete/android/app/src/main/AndroidManifest.xml:8:5-77
+15-->/home/rpoling123/ApoMaeKae_V8.3_Complete/android/app/src/main/AndroidManifest.xml:8:22-74
+16    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+16-->/home/rpoling123/ApoMaeKae_V8.3_Complete/android/app/src/main/AndroidManifest.xml:9:5-86
+16-->/home/rpoling123/ApoMaeKae_V8.3_Complete/android/app/src/main/AndroidManifest.xml:9:22-83
+17
+18    <application
+18-->/home/rpoling123/ApoMaeKae_V8.3_Complete/android/app/src/main/AndroidManifest.xml:11:5-33:19
+19        android:allowBackup="true"
+19-->/home/rpoling123/ApoMaeKae_V8.3_Complete/android/app/src/main/AndroidManifest.xml:13:9-35
+20        android:debuggable="true"
+21        android:extractNativeLibs="false"
+22        android:label="ApoMaeKae"
+22-->/home/rpoling123/ApoMaeKae_V8.3_Complete/android/app/src/main/AndroidManifest.xml:12:9-34
+23        android:supportsRtl="true" >
+23-->/home/rpoling123/ApoMaeKae_V8.3_Complete/android/app/src/main/AndroidManifest.xml:14:9-35
+24        <activity
+24-->/home/rpoling123/ApoMaeKae_V8.3_Complete/android/app/src/main/AndroidManifest.xml:16:9-26:20
+25            android:name="com.apo.maekae.MainActivity"
+25-->/home/rpoling123/ApoMaeKae_V8.3_Complete/android/app/src/main/AndroidManifest.xml:17:13-41
+26            android:exported="true"
+26-->/home/rpoling123/ApoMaeKae_V8.3_Complete/android/app/src/main/AndroidManifest.xml:18:13-36
+27            android:theme="@android:style/Theme.Material.Light.NoActionBar" >
+27-->/home/rpoling123/ApoMaeKae_V8.3_Complete/android/app/src/main/AndroidManifest.xml:19:13-76
+28            <intent-filter>
+28-->/home/rpoling123/ApoMaeKae_V8.3_Complete/android/app/src/main/AndroidManifest.xml:21:13-24:29
+29                <action android:name="android.intent.action.MAIN" />
+29-->/home/rpoling123/ApoMaeKae_V8.3_Complete/android/app/src/main/AndroidManifest.xml:22:17-69
+29-->/home/rpoling123/ApoMaeKae_V8.3_Complete/android/app/src/main/AndroidManifest.xml:22:25-66
+30
+31                <category android:name="android.intent.category.LAUNCHER" />
+31-->/home/rpoling123/ApoMaeKae_V8.3_Complete/android/app/src/main/AndroidManifest.xml:23:17-77
+31-->/home/rpoling123/ApoMaeKae_V8.3_Complete/android/app/src/main/AndroidManifest.xml:23:27-74
+32            </intent-filter>
+33        </activity>
+34
+35        <service
+35-->/home/rpoling123/ApoMaeKae_V8.3_Complete/android/app/src/main/AndroidManifest.xml:28:9-31:40
+36            android:name="com.apo.maekae.ZoneService"
+36-->/home/rpoling123/ApoMaeKae_V8.3_Complete/android/app/src/main/AndroidManifest.xml:29:13-40
+37            android:exported="false"
+37-->/home/rpoling123/ApoMaeKae_V8.3_Complete/android/app/src/main/AndroidManifest.xml:31:13-37
+38            android:foregroundServiceType="location" />
+38-->/home/rpoling123/ApoMaeKae_V8.3_Complete/android/app/src/main/AndroidManifest.xml:30:13-53
+39    </application>
+40
+41</manifest>
