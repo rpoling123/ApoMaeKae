@@ -1,0 +1,7 @@
+{
+  "name":"apomaekae-license-server",
+  "version":"1.2.0",
+  "private":true,
+  "description":"ApoMaeKae V8.3 License API + Admin (Node built-in HTTP, no npm dependency)",
+  "scripts":{"start":"node server.js"}
+}

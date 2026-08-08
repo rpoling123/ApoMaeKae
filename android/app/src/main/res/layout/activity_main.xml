@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent">
+<LinearLayout android:orientation="vertical" android:layout_width="match_parent" android:layout_height="wrap_content" android:padding="12dp">
+<TextView android:text="อาโปแมะเก๊ V8.3 • Zone Guard 500m" android:textStyle="bold" android:textSize="20sp" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+<TextView android:id="@+id/status" android:text="กำลังรอ GPS." android:paddingTop="8dp" android:paddingBottom="8dp" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+<LinearLayout android:orientation="vertical" android:padding="10dp" android:background="#EEEEEE" android:layout_width="match_parent" android:layout_height="wrap_content">
+<TextView android:text="🔑 LICENSE / KEY" android:textStyle="bold" android:textSize="18sp" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+<EditText android:id="@+id/licenseKey" android:hint="กรอก Key เช่น APO-XXXX-XXXX" android:inputType="textCapCharacters" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+<TextView android:id="@+id/licenseStatus" android:text="ยังไม่ได้ตรวจ License" android:paddingTop="6dp" android:paddingBottom="6dp" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+<LinearLayout android:orientation="horizontal" android:layout_width="match_parent" android:layout_height="wrap_content">
+<Button android:id="@+id/saveLicense" android:text="บันทึก / ตรวจ Key" android:layout_weight="1" android:layout_width="0dp" android:layout_height="wrap_content"/>
+<Button android:id="@+id/refreshLicense" android:text="รีเฟรช" android:layout_weight="1" android:layout_width="0dp" android:layout_height="wrap_content"/>
+</LinearLayout>
+</LinearLayout>
+<CheckBox android:id="@+id/g1" android:text="อินใช้ประจำ + อินรับหน้าฝน ยอดฮิต" android:checked="true" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+<CheckBox android:id="@+id/g2" android:text="รวมอินสาย + อินเพิ่มพิเศษ" android:checked="true" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+<CheckBox android:id="@+id/g3" android:text="รวมทุกมังกรเลือกติ๊กได้" android:checked="true" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+<CheckBox android:id="@+id/g4" android:text="โซนรามอินทรา ตลิ่งชัน" android:checked="true" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+<Button android:id="@+id/start" android:text="เริ่มตรวจโซน GPS" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+<Button android:id="@+id/web" android:text="เปิด Dragon Maps" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+</LinearLayout>
+</ScrollView>
