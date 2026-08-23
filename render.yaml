@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: apomaekae-2
+    runtime: node
+    rootDir: server
+    buildCommand: npm install
+    startCommand: node server.js

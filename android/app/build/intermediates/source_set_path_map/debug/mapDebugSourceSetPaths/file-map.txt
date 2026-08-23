@@ -1,0 +1,7 @@
+com.apo.maekae.app-pngs-0 /home/rpoling123/ApoMaeKae_V8.3_Complete/android/app/build/generated/res/pngs/debug
+com.apo.maekae.app-resValues-1 /home/rpoling123/ApoMaeKae_V8.3_Complete/android/app/build/generated/res/resValues/debug
+com.apo.maekae.app-packageDebugResources-2 /home/rpoling123/ApoMaeKae_V8.3_Complete/android/app/build/intermediates/incremental/debug/packageDebugResources/merged.dir
+com.apo.maekae.app-packageDebugResources-3 /home/rpoling123/ApoMaeKae_V8.3_Complete/android/app/build/intermediates/incremental/debug/packageDebugResources/stripped.dir
+com.apo.maekae.app-debug-4 /home/rpoling123/ApoMaeKae_V8.3_Complete/android/app/build/intermediates/merged_res/debug/mergeDebugResources
+com.apo.maekae.app-debug-5 /home/rpoling123/ApoMaeKae_V8.3_Complete/android/app/src/debug/res
+com.apo.maekae.app-main-6 /home/rpoling123/ApoMaeKae_V8.3_Complete/android/app/src/main/res

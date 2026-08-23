@@ -1,0 +1,12 @@
+com.apo.maekae:layout/activity_main = 0x7f020000
+com.apo.maekae:id/status = 0x7f010009
+com.apo.maekae:id/web = 0x7f01000a
+com.apo.maekae:id/saveLicense = 0x7f010007
+com.apo.maekae:id/refreshLicense = 0x7f010006
+com.apo.maekae:id/g2 = 0x7f010001
+com.apo.maekae:id/licenseStatus = 0x7f010005
+com.apo.maekae:id/licenseKey = 0x7f010004
+com.apo.maekae:id/start = 0x7f010008
+com.apo.maekae:id/g4 = 0x7f010003
+com.apo.maekae:id/g3 = 0x7f010002
+com.apo.maekae:id/g1 = 0x7f010000

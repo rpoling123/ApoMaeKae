@@ -1,0 +1,29 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.apo.maekae'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'com.apo.maekae'
+        minSdk 26
+        targetSdk 35
+        versionCode 83
+        versionName '8.3'
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            shrinkResources false
+        }
+        debug {
+            minifyEnabled false
+        }
+    }
+}
+
+dependencies {
+}

@@ -1,0 +1,14 @@
+R_DEF: Internal format may change without notice
+local
+id g1
+id g2
+id g3
+id g4
+id licenseKey
+id licenseStatus
+id refreshLicense
+id saveLicense
+id start
+id status
+id web
+layout activity_main
