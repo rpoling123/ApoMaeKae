@@ -182,7 +182,39 @@ http.createServer(async(req,res)=>{
    }
   }
 
-  send(res,404,{error:"not found"});
+  const pathname = new URL(req.url, "http://localhost").pathname;
+
+if(req.method === "GET" && (pathname === "/" || pathname === "/buy-key")){
+  const fs = require("fs");
+  const path = require("path");
+  const file = path.join(__dirname, "public", "buy-key.html");
+
+  try{
+    const html = fs.readFileSync(file);
+    res.writeHead(200, {"Content-Type":"text/html; charset=utf-8"});
+    return res.end(html);
+  }catch(e){
+    console.error(e);
+    return send(res,500,{error:"ไม่พบ buy-key.html"});
+  }
+}
+
+if(req.method === "GET" && pathname === "/payment_qr.jpg"){
+  const fs = require("fs");
+  const path = require("path");
+  const file = path.join(__dirname, "public", "payment_qr.jpg");
+
+  try{
+    const img = fs.readFileSync(file);
+    res.writeHead(200, {"Content-Type":"image/jpeg"});
+    return res.end(img);
+  }catch(e){
+    console.error(e);
+    return send(res,404,{error:"ไม่พบ payment_qr.jpg"});
+  }
+}
+
+send(res,404,{error:"not found"});
 
  }catch(e){
   console.error(e);
