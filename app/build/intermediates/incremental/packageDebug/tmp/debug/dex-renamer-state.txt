@@ -1,0 +1,10 @@
+#Thu Aug 20 11:48:00 GMT 2026
+base.0=/data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/build/intermediates/dex/debug/mergeProjectDexDebug/0/classes.dex
+base.1=/data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/build/intermediates/dex/debug/mergeProjectDexDebug/11/classes.dex
+base.2=/data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/build/intermediates/dex/debug/mergeProjectDexDebug/8/classes.dex
+path.0=0/classes.dex
+path.1=11/classes.dex
+path.2=8/classes.dex
+renamed.0=classes.dex
+renamed.1=classes2.dex
+renamed.2=classes3.dex

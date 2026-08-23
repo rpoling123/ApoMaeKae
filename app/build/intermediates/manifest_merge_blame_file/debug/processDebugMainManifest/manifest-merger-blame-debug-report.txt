@@ -1,0 +1,70 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="com.apomaekae.dragon"
+4    android:versionCode="1"
+5    android:versionName="1.0" >
+6
+7    <uses-sdk
+8        android:minSdkVersion="23"
+9        android:targetSdkVersion="35" />
+10
+11    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+11-->/data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml:2:5-78
+11-->/data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml:2:22-76
+12    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+12-->/data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml:3:5-80
+12-->/data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml:3:22-78
+13    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+13-->/data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml:4:5-76
+13-->/data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml:4:22-74
+14    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+14-->/data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml:5:5-85
+14-->/data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml:5:22-83
+15    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+15-->/data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml:6:5-76
+15-->/data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml:6:22-74
+16    <uses-permission android:name="android.permission.INTERNET" />
+16-->/data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml:8:5-66
+16-->/data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml:8:22-64
+17
+18    <application
+18-->/data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml:9:5-25:19
+19        android:allowBackup="false"
+19-->/data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml:12:9-36
+20        android:debuggable="true"
+21        android:extractNativeLibs="false"
+22        android:label="@string/app_name"
+22-->/data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml:11:9-41
+23        android:supportsRtl="true"
+23-->/data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml:13:9-35
+24        android:theme="@style/AppTheme" >
+24-->/data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml:10:9-40
+25        <activity
+25-->/data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml:14:9-19:20
+26            android:name="com.apomaekae.dragon.MainActivity"
+26-->/data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml:14:19-47
+27            android:exported="true" >
+27-->/data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml:14:48-71
+28            <intent-filter>
+28-->/data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml:15:13-18:29
+29                <action android:name="android.intent.action.MAIN" />
+29-->/data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml:16:17-68
+29-->/data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml:16:25-66
+30
+31                <category android:name="android.intent.category.LAUNCHER" />
+31-->/data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml:17:17-76
+31-->/data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml:17:27-74
+32            </intent-filter>
+33        </activity>
+34
+35        <service
+35-->/data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml:21:9-24:55
+36            android:name="com.apomaekae.dragon.ZoneService"
+36-->/data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml:22:13-40
+37            android:exported="false"
+37-->/data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml:23:13-37
+38            android:foregroundServiceType="location" />
+38-->/data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml:24:13-53
+39    </application>
+40
+41</manifest>

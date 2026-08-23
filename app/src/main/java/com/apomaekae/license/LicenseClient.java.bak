@@ -1,0 +1,119 @@
+package com.apomaekae.license;
+import android.provider.Settings;
+
+import android.content.Context;
+import org.json.JSONObject;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+
+public final class LicenseClient {
+    private static final String PREF = "apo_license_v91";
+    private static final String KEY = "license_key";
+    private static final String EXPIRES = "expires";
+    private static final String STATUS = "status";
+    private static final String API = "https://apomaekae-2.onrender.com/api/license/check";
+
+    private LicenseClient() {}
+
+    public static String getKey(Context c) {
+        return c.getSharedPreferences(PREF, Context.MODE_PRIVATE).getString(KEY, "");
+    }
+
+    public static String getExpires(Context c) {
+        return c.getSharedPreferences(PREF, Context.MODE_PRIVATE).getString(EXPIRES, "");
+    }
+
+    public static String getStatus(Context c) {
+        return c.getSharedPreferences(PREF, Context.MODE_PRIVATE).getString(STATUS, "");
+    }
+
+    public static void save(Context c, String key, String expires, String status) {
+        c.getSharedPreferences(PREF, Context.MODE_PRIVATE).edit()
+            .putString(KEY, key == null ? "" : key.trim())
+            .putString(EXPIRES, expires == null ? "" : expires)
+            .putString(STATUS, status == null ? "active" : status)
+            .apply();
+    }
+
+    public static Result verify(Context c, String key) {
+        if (key == null || key.trim().isEmpty())
+            return new Result(false, "กรุณาใส่ KEY", "", "");
+
+        HttpURLConnection h = null;
+        try {
+            URL u = new URL(API);
+            h = (HttpURLConnection) u.openConnection();
+            h.setRequestMethod("POST");
+            h.setConnectTimeout(10000);
+            h.setReadTimeout(15000);
+            h.setDoOutput(true);
+            h.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
+
+            JSONObject body = new JSONObject();
+            body.put("key", key.trim());
+
+            try (OutputStream os = h.getOutputStream()) {
+                os.write(body.toString().getBytes(StandardCharsets.UTF_8));
+            }
+
+            int code = h.getResponseCode();
+            java.io.InputStream stream = (code >= 200 && code < 400)
+                    ? h.getInputStream()
+                    : h.getErrorStream();
+            BufferedReader br = new BufferedReader(new InputStreamReader(
+                code >= 400 ? h.getErrorStream() : h.getInputStream(),
+                StandardCharsets.UTF_8
+            ));
+            StringBuilder sb = new StringBuilder();
+            String line;
+            while ((line = br.readLine()) != null) sb.append(line);
+            br.close();
+
+            String raw = sb.toString();
+            JSONObject j = raw.isEmpty() ? new JSONObject() : new JSONObject(raw);
+
+            boolean ok = j.optBoolean("ok", code >= 200 && code < 300);
+            if (!ok) {
+                String reason = j.optString("reason", "");
+                return new Result(false,
+                    reason.equals("invalid_or_expired") ? "KEY ไม่ถูกต้องหรือหมดอายุ" :
+                    reason.equals("device_limit") ? "KEY ครบจำนวนเครื่องแล้ว" :
+                    "KEY ไม่ผ่าน (" + code + ")", "", "");
+            }
+
+            String exp = j.optString("expires",
+                j.optString("expires_at",
+                j.optString("expireAt",
+                j.optString("expiresAt", ""))));
+
+            String st = j.optString("status", "active");
+            String returnedKey = j.optString("key", key.trim());
+            save(c, returnedKey, exp, st);
+
+            return new Result(true, "LICENSE ACTIVE", exp, st);
+
+        } catch (Exception e) {
+            return new Result(false, "เชื่อมต่อระบบ KEY ไม่สำเร็จ", "", "");
+        } finally {
+            if (h != null) h.disconnect();
+        }
+    }
+
+    public static final class Result {
+        public final boolean ok;
+        public final String message;
+        public final String expires;
+        public final String status;
+
+        public Result(boolean ok, String message, String expires, String status) {
+            this.ok = ok;
+            this.message = message;
+            this.expires = expires;
+            this.status = status;
+        }
+    }
+}

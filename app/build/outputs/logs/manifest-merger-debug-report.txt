@@ -1,0 +1,83 @@
+-- Merging decision tree log ---
+manifest
+ADDED from /data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml:1:1-26:12
+INJECTED from /data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml:1:1-26:12
+INJECTED from /data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml:1:1-26:12
+INJECTED from /data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml:1:1-26:12
+	package
+		INJECTED from /data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml
+	android:versionName
+		INJECTED from /data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml
+	android:versionCode
+		INJECTED from /data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml
+	xmlns:android
+		ADDED from /data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml:1:11-69
+uses-permission#android.permission.ACCESS_FINE_LOCATION
+ADDED from /data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml:2:5-78
+	android:name
+		ADDED from /data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml:2:22-76
+uses-permission#android.permission.ACCESS_COARSE_LOCATION
+ADDED from /data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml:3:5-80
+	android:name
+		ADDED from /data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml:3:22-78
+uses-permission#android.permission.FOREGROUND_SERVICE
+ADDED from /data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml:4:5-76
+	android:name
+		ADDED from /data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml:4:22-74
+uses-permission#android.permission.FOREGROUND_SERVICE_LOCATION
+ADDED from /data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml:5:5-85
+	android:name
+		ADDED from /data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml:5:22-83
+uses-permission#android.permission.POST_NOTIFICATIONS
+ADDED from /data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml:6:5-76
+	android:name
+		ADDED from /data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml:6:22-74
+uses-permission#android.permission.INTERNET
+ADDED from /data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml:8:5-66
+	android:name
+		ADDED from /data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml:8:22-64
+application
+ADDED from /data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml:9:5-25:19
+INJECTED from /data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml:9:5-25:19
+	android:extractNativeLibs
+		INJECTED from /data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml
+	android:supportsRtl
+		ADDED from /data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml:13:9-35
+	android:label
+		ADDED from /data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml:11:9-41
+	android:allowBackup
+		ADDED from /data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml:12:9-36
+	android:theme
+		ADDED from /data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml:10:9-40
+activity#com.apomaekae.dragon.MainActivity
+ADDED from /data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml:14:9-19:20
+	android:exported
+		ADDED from /data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml:14:48-71
+	android:name
+		ADDED from /data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml:14:19-47
+intent-filter#action:name:android.intent.action.MAIN+category:name:android.intent.category.LAUNCHER
+ADDED from /data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml:15:13-18:29
+action#android.intent.action.MAIN
+ADDED from /data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml:16:17-68
+	android:name
+		ADDED from /data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml:16:25-66
+category#android.intent.category.LAUNCHER
+ADDED from /data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml:17:17-76
+	android:name
+		ADDED from /data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml:17:27-74
+service#com.apomaekae.dragon.ZoneService
+ADDED from /data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml:21:9-24:55
+	android:exported
+		ADDED from /data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml:23:13-37
+	android:foregroundServiceType
+		ADDED from /data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml:24:13-53
+	android:name
+		ADDED from /data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml:22:13-40
+uses-sdk
+INJECTED from /data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml reason: use-sdk injection requested
+INJECTED from /data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml
+INJECTED from /data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml
+	android:targetSdkVersion
+		INJECTED from /data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml
+	android:minSdkVersion
+		INJECTED from /data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/AndroidManifest.xml

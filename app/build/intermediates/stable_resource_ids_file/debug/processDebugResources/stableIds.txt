@@ -1,0 +1,3 @@
+com.apomaekae.dragon:style/AppTheme = 0x7f030000
+com.apomaekae.dragon:string/app_name = 0x7f020000
+com.apomaekae.dragon:drawable/apomaekae_bg = 0x7f010000
