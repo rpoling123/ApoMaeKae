@@ -42,6 +42,14 @@ jobs:
         run: |
           echo "## ApoMaeKae APK" >> "$GITHUB_STEP_SUMMARY"
           echo "Build completed successfully." >> "$GITHUB_STEP_SUMMARY"
+          echo "APK artifact: ApoMaeKae-debug-apk" >> "$GITHUB_STEP_SUMMARY"          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Build summary
+        run: |
+          echo "## ApoMaeKae APK" >> "$GITHUB_STEP_SUMMARY"
+          echo "Build completed successfully." >> "$GITHUB_STEP_SUMMARY"
           echo "Artifact: ApoMaeKae-debug-apk" >> "$GITHUB_STEP_SUMMARY"          path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
 
