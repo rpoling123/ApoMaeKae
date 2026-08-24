@@ -15,10 +15,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
@@ -35,6 +35,14 @@ jobs:
         with:
           name: ApoMaeKae-debug-apk
           path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Build summary
+        run: |
+          echo "## ApoMaeKae APK" >> "$GITHUB_STEP_SUMMARY"
+          echo "Build completed successfully." >> "$GITHUB_STEP_SUMMARY"
+          echo "Artifact: ApoMaeKae-debug-apk" >> "$GITHUB_STEP_SUMMARY"          path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
 
       - name: Build summary
