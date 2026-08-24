@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ซื้อ Key • ApoMaeKae V9.1</title>
+<style>
+body{font-family:system-ui,sans-serif;margin:0;padding:18px;background:#071207;color:#18201b}
+.wrap{max-width:720px;margin:auto}
+.card{background:#fff;border-radius:18px;padding:20px;margin:14px 0;box-shadow:0 4px 18px #0002}
+h1{margin:0;background:#087f3e;color:#fff;padding:18px;border-radius:16px}
+.price{font-size:24px;font-weight:800;color:#087f3e}
+.qr{display:block;max-width:100%;max-height:420px;margin:14px auto;border-radius:12px}
+.btn{display:block;text-align:center;text-decoration:none;background:#087f3e;color:#fff;padding:13px;border-radius:10px;margin-top:10px;font-weight:700}
+.muted{color:#666}
+.back{background:#eee;color:#222}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>🔑 APO MAEKAE V9.1 • ซื้อ Key</h1>
+<div class="card">
+<h2>เลือกอายุ Key</h2>
+<p class="price">1 วัน</p>
+<p class="price">7 วัน</p>
+<p class="price">30 วัน</p>
+<p class="muted">ชำระเงินตาม QR ด้านล่าง แล้วส่งสลิปให้แอดมินเพื่อรับ Key</p>
+<img class="qr" src="/payment_qr.jpg" alt="QR ชำระเงิน"
+ onerror="this.style.display='none';document.getElementById('qrmsg').style.display='block'">
+<p id="qrmsg" class="muted" style="display:none">ยังไม่ได้ติดตั้งภาพ QR ชำระเงินบนเซิร์ฟเวอร์</p>
+<a class="btn back" href="/">← กลับหน้าหลัก</a>
+</div>
+</div>
+</body>
+</html>
