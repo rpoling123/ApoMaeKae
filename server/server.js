@@ -10,7 +10,7 @@ const serve=(r,f)=>{try{let d=fs.readFileSync(f),e=path.extname(f),t=e===".html"
 const key=()=> "APO-"+crypto.randomBytes(4).toString("hex").toUpperCase()+"-"+crypto.randomBytes(4).toString("hex").toUpperCase();
 function makeKey(o){let db=read(DB,{keys:{}}),k=key(),now=Date.now(),z=now+o.days*86400000;db.keys[k]={key:k,plan:o.plan,planLabel:o.planLabel,price:o.price,startAt:new Date(now).toISOString(),expiresAt:new Date(z).toISOString(),maxDevices:Number(o.maxDevices||1),devices:[],revoked:false,orderId:o.orderId,paymentRef:o.paymentRef||"",createdAt:new Date().toISOString()};write(DB,db);return db.keys[k]}
 const pub=o=>({orderId:o.orderId,plan:o.plan,planLabel:o.planLabel,price:o.price,status:o.status,createdAt:o.createdAt,paidAt:o.paidAt||null,key:o.status==="paid"?o.key:null,expiresAt:o.status==="paid"?o.expiresAt:null});
-http.createServer(async(q,r)=>{try{let u=new URL(q.url,"http://localhost"),p=u.pathname;
+http.createServer(async(q,r)=>{try{let u=new URL(q.url,"http://localhost"),p=u.pathname,b={}; if(q.method!=="GET" && q.method!=="HEAD"){b=await body(q);}
 if(q.method==="GET"&&(p==="/"||p==="/buy-key"||p==="/buy-key.html"))return serve(r,path.join(PUB,"buy-key.html"));
 if(q.method==="GET"&&(p==="/admin"||p==="/admin.html"))return serve(r,path.join(PUB,"admin.html"));
 if(q.method==="GET"&&(p==="/buy-key"||p==="/buy-key.html"))return serve(r,path.join(PUB,"buy-key.html"));
@@ -21,7 +21,7 @@ if(q.method==="GET"&&p==="/api/health")return send(r,200,{ok:true,version:"V9.1"
 if(q.method==="POST"&&p==="/api/license/check"){let b=await body(q),db=read(DB,{keys:{}}),k=db.keys[String(b.key||"").trim().toUpperCase()],now=Date.now();if(!k)return send(r,404,{active:false,message:"ไม่พบ Key",serverTime:now});let z=Date.parse(k.expiresAt);if(k.revoked)return send(r,200,{active:false,message:"Key ถูกระงับ",serverTime:now,expiresAt:z});if(now<Date.parse(k.startAt))return send(r,200,{active:false,message:"ยังไม่ถึงวันเริ่มใช้งาน",serverTime:now,expiresAt:z});if(now>=z)return send(r,200,{active:false,message:"Key หมดอายุแล้ว",serverTime:now,expiresAt:z});return send(r,200,{active:true,online:true,version:"V9.1",serverTime:now,expiresAt:z,plan:k.planLabel})}
 if(q.method==="POST"&&p==="/api/order/create"){let b=await body(q),pl=PLANS[b.plan];if(!pl)return send(r,400,{error:"แพ็กเกจไม่ถูกต้อง"});let id="ORD-"+Date.now().toString(36).toUpperCase()+"-"+crypto.randomBytes(2).toString("hex").toUpperCase(),db=read(ORDERS,{orders:{}});db.orders[id]={orderId:id,plan:b.plan,planLabel:pl.label,days:pl.days,price:pl.price,status:"pending",createdAt:new Date().toISOString(),paymentRef:"",key:"",expiresAt:""};write(ORDERS,db);return send(r,200,pub(db.orders[id]))}
 if(q.method==="GET"&&p.startsWith("/api/order/")){let id=decodeURIComponent(p.slice(11)),o=read(ORDERS,{orders:{}}).orders[id];if(!o)return send(r,404,{error:"ไม่พบ Order"});return send(r,200,pub(o))}
-if(q.method==="POST"&&p==="/api/payment/webhook"){if(!PAYMENT_SECRET)return send(r,503,{error:"PAYMENT_WEBHOOK_SECRET ยังไม่ได้ตั้งค่า"});if(q.headers["x-payment-secret"]!==PAYMENT_SECRET)return send(r,401,{error:"unauthorized"});let b=await body(q),db=read(ORDERS,{orders:{}}),o=db.orders[b.orderId];if(!o)return send(r,404,{error:"ไม่พบ Order"});if(String(b.status).toLowerCase()!=="paid")return send(r,200,{ok:true,processed:false});if(Number(b.amount)!==o.price)return send(r,400,{error:"ยอดชำระไม่ตรงแพ็กเกจ"});if(o.status==="paid")return send(r,200,{ok:true,processed:false,...pub(o)});o.status="paid";o.paidAt=new Date().toISOString();o.paymentRef=String(b.paymentRef||"");let k=makeKey(o);o.key=k.key;o.expiresAt=k.expiresAt;write(ORDERS,db);return send(r,200,{ok:true,processed:true,...pub(o)})}
+if(q.method==="POST"&&p==="/api/payment/webhook"){if(!PAYMENT_SECRET)return send(r,503,{error:"PAYMENT_WEBHOOK_SECRET ยังไม่ได้ตั้งค่า"});if(q.headers["x-payment-secret"]!==PAYMENT_SECRET)return send(r,401,{error:"unauthorized"});let db=read(ORDERS,{orders:{}}),o=db.orders[b.orderId];if(!o)return send(r,404,{error:"ไม่พบ Order"});if(String(b.status).toLowerCase()!=="paid")return send(r,200,{ok:true,processed:false});if(Number(b.amount)!==o.price)return send(r,400,{error:"ยอดชำระไม่ตรงแพ็กเกจ"});if(o.status==="paid")return send(r,200,{ok:true,processed:false,...pub(o)});o.status="paid";o.paidAt=new Date().toISOString();o.paymentRef=String(b.paymentRef||"");let k=makeKey(o);o.key=k.key;o.expiresAt=k.expiresAt;write(ORDERS,db);return send(r,200,{ok:true,processed:true,...pub(o)})}
 
 // LINE BK Alerts bridge:
 // The APK notification listener forwards only candidate money-in notifications.
@@ -29,7 +29,7 @@ if(q.method==="POST"&&p==="/api/payment/webhook"){if(!PAYMENT_SECRET)return send
 // If multiple pending orders have the same amount, it returns ambiguous and does NOT create a key.
 if(q.method==="POST"&&p==="/api/payment/linebk-alert"){
   if(q.headers["x-app-token"]!=="APO_V91_LINEBK")return send(r,401,{error:"unauthorized"});
-  const b=await body(q),raw=String((b.title||"")+" "+(b.text||""));
+  const raw=String((b.title||"")+" "+(b.text||""));
   const m=raw.match(/(?:฿|บาท|THB|\b)(?:\s*)?([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]{1,2})?)/i);
   if(!m)return send(r,200,{ok:true,processed:false,reason:"amount_not_found"});
   const amount=Number(m[1].replace(/,/g,""));
@@ -42,7 +42,7 @@ if(q.method==="POST"&&p==="/api/payment/linebk-alert"){
   return send(r,200,{ok:true,processed:true,orderId:o.orderId,key:o.key,expiresAt:o.expiresAt});
 }
 
-if(p.startsWith("/api/admin/") && !(q.method==="POST" && (p==="/api/admin/keys" || p==="/api/admin/keys/update" || p==="/api/admin/keys/delete"))){if(!auth(q))return send(r,401,{error:"unauthorized"});let b=q.method==="GET"?{}:await body(q),db=read(DB,{keys:{}}),od=read(ORDERS,{orders:{}});
+if(p.startsWith("/api/admin/") && !(q.method==="POST" && (p==="/api/admin/keys" || p==="/api/admin/keys/update" || p==="/api/admin/keys/delete"))){if(!auth(q))return send(r,401,{error:"unauthorized"});let db=read(DB,{keys:{}}),od=read(ORDERS,{orders:{}});
 if(q.method==="GET"&&p==="/api/admin/keys")return send(r,200,db.keys);
 if(q.method==="GET"&&p==="/api/admin/orders")return send(r,200,od.orders);
 if(q.method==="POST"&&p==="/api/admin/orders/confirm"){let o=od.orders[b.orderId];if(!o)return send(r,404,{error:"ไม่พบ Order"});if(o.status!=="paid"){o.status="paid";o.paidAt=new Date().toISOString();o.paymentRef=String(b.paymentRef||"");let k=makeKey(o);o.key=k.key;o.expiresAt=k.expiresAt;write(ORDERS,od)}return send(r,200,pub(o))}
