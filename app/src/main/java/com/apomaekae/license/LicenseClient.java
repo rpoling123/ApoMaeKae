@@ -136,7 +136,13 @@ public final class LicenseClient {
             );
 
             if (active) {
-                saveKey(context, returnedKey);
+                context.getSharedPreferences("license", Context.MODE_PRIVATE)
+                        .edit()
+                        .putString("key", returnedKey.trim().toUpperCase())
+                        .putString("expires", expires)
+                        .putString("status", status)
+                        .apply();
+
                 return new Result(
                         true,
                         "LICENSE ACTIVE",

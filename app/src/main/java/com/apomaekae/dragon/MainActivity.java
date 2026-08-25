@@ -102,6 +102,11 @@ public class MainActivity extends Activity {
         check.setOnClickListener(v -> verifyKey());
         refresh.setOnClickListener(v -> verifyKey());
 
+        Button buyKey = new Button(this);
+        buyKey.setText("🛒 ซื้อ KEY ใหม่");
+        card.addView(buyKey, full());
+        buyKey.setOnClickListener(v -> openBuyKey());
+
         String saved = LicenseClient.getKey(this);
         if (!saved.isEmpty()) verifyKey();
 
