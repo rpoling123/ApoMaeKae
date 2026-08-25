@@ -8,7 +8,7 @@ const body=q=>new Promise((ok,bad)=>{let s="";q.on("data",c=>s+=c);q.on("end",()
 const auth=q=>!!TOKEN&&q.headers["x-admin-token"]===TOKEN;
 const serve=(r,f)=>{try{let d=fs.readFileSync(f),e=path.extname(f),t=e===".html"?"text/html; charset=utf-8":e===".jpg"||e===".jpeg"?"image/jpeg":e===".png"?"image/png":e===".svg"?"image/svg+xml":"application/octet-stream";send(r,200,d,t)}catch{send(r,404,{error:"not found"})}};
 const key=()=> "APO-"+crypto.randomBytes(4).toString("hex").toUpperCase()+"-"+crypto.randomBytes(4).toString("hex").toUpperCase();
-function makeKey(o){let db=read(DB,{keys:{}}),k=key(),now=Date.now(),z=now+o.days*86400000;db.keys[k]={key:k,plan:o.plan,planLabel:o.planLabel,price:o.price,startAt:new Date(now).toISOString(),expiresAt:new Date(z).toISOString(),maxDevices:1,devices:[],revoked:false,orderId:o.orderId,paymentRef:o.paymentRef||"",createdAt:new Date().toISOString()};write(DB,db);return db.keys[k]}
+function makeKey(o){let db=read(DB,{keys:{}}),k=key(),now=Date.now(),z=now+o.days*86400000;db.keys[k]={key:k,plan:o.plan,planLabel:o.planLabel,price:o.price,startAt:new Date(now).toISOString(),expiresAt:new Date(z).toISOString(),maxDevices:Number(o.maxDevices||1),devices:[],revoked:false,orderId:o.orderId,paymentRef:o.paymentRef||"",createdAt:new Date().toISOString()};write(DB,db);return db.keys[k]}
 const pub=o=>({orderId:o.orderId,plan:o.plan,planLabel:o.planLabel,price:o.price,status:o.status,createdAt:o.createdAt,paidAt:o.paidAt||null,key:o.status==="paid"?o.key:null,expiresAt:o.status==="paid"?o.expiresAt:null});
 http.createServer(async(q,r)=>{try{let u=new URL(q.url,"http://localhost"),p=u.pathname;
 if(q.method==="GET"&&(p==="/"||p==="/buy-key"||p==="/buy-key.html"))return serve(r,path.join(PUB,"buy-key.html"));
@@ -48,6 +48,8 @@ if(q.method==="GET"&&p==="/api/admin/orders")return send(r,200,od.orders);
 if(q.method==="POST"&&p==="/api/admin/orders/confirm"){let o=od.orders[b.orderId];if(!o)return send(r,404,{error:"ไม่พบ Order"});if(o.status!=="paid"){o.status="paid";o.paidAt=new Date().toISOString();o.paymentRef=String(b.paymentRef||"");let k=makeKey(o);o.key=k.key;o.expiresAt=k.expiresAt;write(ORDERS,od)}return send(r,200,pub(o))}
 if(q.method==="POST"&&p==="/api/admin/keys/revoke"){let k=db.keys[String(b.key||"").toUpperCase()];if(!k)return send(r,404,{error:"ไม่พบ Key"});k.revoked=true;write(DB,db);return send(r,200,k)}
 if(q.method==="POST"&&p==="/api/admin/keys/unrevoke"){let k=db.keys[String(b.key||"").toUpperCase()];if(!k)return send(r,404,{error:"ไม่พบ Key"});k.revoked=false;write(DB,db);return send(r,200,k)}}
+
+   if(!auth(q))return send(r,401,{error:"unauthorized"});
 
    // ADMIN สร้าง KEY ใหม่
    if(q.method==="POST"&&p==="/api/admin/keys"){

@@ -5,170 +5,64 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>APO MAEKAE V9.1 • ADMIN</title>
 <style>
-*{box-sizing:border-box}
-body{font-family:system-ui,sans-serif;margin:0;background:#071207;color:#222}
-.wrap{max-width:900px;margin:auto;padding:18px}
-.card{background:#fff;border-radius:18px;padding:18px;margin:14px 0;box-shadow:0 6px 24px #0003}
-h1{color:#075d27}
-input,select,button{width:100%;padding:12px;margin:5px 0;border-radius:10px;border:1px solid #ccc;font-size:16px}
-button{background:#087f3e;color:#fff;border:0}
-.danger{background:#b91c1c}
-.gray{background:#555}
-.ok{background:#e8f8ed;padding:10px;border-radius:10px}
-table{width:100%;border-collapse:collapse}
-td,th{padding:8px;border-bottom:1px solid #ddd;text-align:left}
-.scroll{overflow:auto}
+*{box-sizing:border-box}body{font-family:system-ui,sans-serif;margin:0;background:#071207;color:#222}.wrap{max-width:980px;margin:auto;padding:14px}.card{background:#fff;border-radius:18px;padding:18px;margin:14px 0;box-shadow:0 6px 24px #0003}h1,h2{color:#075d27}input,select,button{width:100%;padding:12px;margin:5px 0;border-radius:10px;border:1px solid #ccc;font-size:16px}button{background:#087f3e;color:#fff;border:0;font-weight:600}.danger{background:#b91c1c}.gray{background:#555}.ok{background:#e8f8ed;padding:10px;border-radius:10px}.warn{background:#fff7d6;padding:10px;border-radius:10px}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.stat{background:#f3f6f3;border-radius:14px;padding:12px;text-align:center}.stat b{display:block;font-size:26px;color:#087f3e}.scroll{overflow:auto}table{width:100%;border-collapse:collapse;min-width:700px}td,th{padding:8px;border-bottom:1px solid #ddd;text-align:left;vertical-align:top}.small{font-size:13px;color:#666}@media(max-width:650px){.grid{grid-template-columns:repeat(2,1fr)}}
 </style>
 </head>
-<body>
-<div class="wrap">
-
+<body><div class="wrap">
 <div class="card">
 <h1>🔐 APO MAEKAE V9.1 • ADMIN</h1>
-<p>ใช้รหัส ADMIN เพื่อสร้าง / แก้ไข / ล็อก / ปลดล็อก / ลบ KEY</p>
+<p>จัดการ KEY • ตรวจ Order • ยืนยันการชำระเงิน • ล็อก/ปลดล็อก KEY</p>
 <input id="admin" type="password" placeholder="รหัส ADMIN">
 <button onclick="load()">🔓 เข้าสู่ระบบ ADMIN</button>
 <div id="msg"></div>
 </div>
 
+<div class="card" id="dashboard" style="display:none">
+<h2>📊 Dashboard</h2>
+<div class="grid">
+<div class="stat">KEY ทั้งหมด<b id="sAll">0</b></div>
+<div class="stat">ACTIVE<b id="sActive">0</b></div>
+<div class="stat">หมดอายุ/ล็อก<b id="sOff">0</b></div>
+<div class="stat">รอชำระ<b id="sPending">0</b></div>
+</div>
+<button class="gray" onclick="refreshAll()">🔄 รีเฟรชข้อมูล</button>
+</div>
+
 <div class="card" id="panel" style="display:none">
 <h2>➕ สร้าง KEY</h2>
-<select id="plan">
-<option value="day">1 วัน • ฿5</option>
-<option value="week">7 วัน • ฿15</option>
-<option value="month">30 วัน • ฿39</option>
-<option value="year">365 วัน • ฿199</option>
-<option value="custom">กำหนดเอง</option>
-</select>
+<select id="plan"><option value="day">1 วัน • ฿5</option><option value="week">7 วัน • ฿15</option><option value="month">30 วัน • ฿39</option><option value="year">365 วัน • ฿199</option><option value="custom">กำหนดเอง</option></select>
 <input id="days" type="number" min="1" max="3650" value="1" placeholder="จำนวนวัน">
 <input id="maxDevices" type="number" min="1" value="1" placeholder="จำนวนเครื่อง">
-<input id="price" type="number" min="0" value="0" placeholder="ราคา">
-<button onclick="createKey()">สร้าง KEY</button>
-<div id="created"></div>
+<input id="price" type="number" min="0" value="5" placeholder="ราคา">
+<button onclick="createKey()">🔑 สร้าง KEY</button><div id="created"></div>
+</div>
+
+<div class="card" id="orders" style="display:none">
+<h2>💳 Orders / การชำระเงิน</h2>
+<p class="small">ตรวจรายการซื้อ KEY และยืนยันรายการที่โอนแล้ว</p>
+<div class="scroll"><table><thead><tr><th>Order</th><th>แพ็กเกจ</th><th>ยอด</th><th>สถานะ</th><th>การทำงาน</th></tr></thead><tbody id="orderRows"></tbody></table></div>
 </div>
 
 <div class="card" id="list" style="display:none">
-<h2>🛠 จัดการ KEY</h2>
-<button class="gray" onclick="loadKeys()">รีเฟรชรายการ</button>
-<div class="scroll">
-<table>
-<thead><tr><th>KEY</th><th>หมดอายุ</th><th>เครื่อง</th><th>สถานะ</th><th>จัดการ</th></tr></thead>
-<tbody id="rows"></tbody>
-</table>
+<h2>🛠 รายการ KEY</h2>
+<div class="scroll"><table><thead><tr><th>KEY</th><th>เริ่ม</th><th>หมดอายุ</th><th>เครื่อง</th><th>สถานะ</th><th>จัดการ</th></tr></thead><tbody id="rows"></tbody></table>
+</div></div>
 </div>
-</div>
-
-</div>
-
 <script>
-let TOKEN="";
-const $=id=>document.getElementById(id);
-
-function msg(t,ok=false){
- $("msg").innerHTML="<div class='"+(ok?"ok":"")+"'>"+t+"</div>";
-}
-
-async function api(url,options={}){
- options.headers={...(options.headers||{}),"x-admin-token":TOKEN};
- const r=await fetch(url,options);
- const j=await r.json().catch(()=>({error:"ตอบกลับไม่ใช่ JSON"}));
- if(!r.ok)throw new Error(j.error||j.message||"เกิดข้อผิดพลาด");
- return j;
-}
-
-async function load(){
- TOKEN=$("admin").value.trim();
- if(!TOKEN)return msg("❌ กรุณากรอกรหัส ADMIN");
- try{
-  await api("/api/admin/keys");
-  $("panel").style.display="block";
-  $("list").style.display="block";
-  msg("✅ ADMIN ใช้งานได้",true);
-  loadKeys();
- }catch(e){msg("❌ "+e.message);TOKEN=""}
-}
-
-function fmt(x){
- return x?new Date(x).toLocaleString("th-TH",{timeZone:"Asia/Bangkok"}):"-";
-}
-
-async function createKey(){
- try{
-  const plan=$("plan").value;
-  const j=await api("/api/admin/keys",{
-   method:"POST",
-   headers:{"Content-Type":"application/json"},
-   body:JSON.stringify({
-    plan,
-    days:Number($("days").value),
-    maxDevices:Number($("maxDevices").value),
-    price:Number($("price").value)
-   })
-  });
-  $("created").innerHTML="<div class='ok'>✅ สร้างสำเร็จ<br><b>"+j.key+"</b><br>หมดอายุ: "+fmt(j.license.expiresAt)+"</div>";
-  loadKeys();
- }catch(e){alert(e.message)}
-}
-
-async function loadKeys(){
- try{
-  const data=await api("/api/admin/keys");
-  const keys=Object.values(data);
-  $("rows").innerHTML=keys.map(k=>{
-   const status=k.revoked?"🔴 ล็อก":(Date.now()<Date.parse(k.expiresAt)?"🟢 ACTIVE":"⚪ หมดอายุ");
-   const action=k.revoked
-    ?"<button onclick=\"unlock('"+k.key+"')\">ปลดล็อก</button>"
-    :"<button class='danger' onclick=\"lock('"+k.key+"')\">ล็อก</button>";
-   return "<tr>"+
-    "<td><b>"+k.key+"</b></td>"+
-    "<td>"+fmt(k.expiresAt)+"</td>"+
-    "<td>"+(k.maxDevices||1)+"</td>"+
-    "<td>"+status+"</td>"+
-    "<td>"+action+
-    "<button class='gray' onclick=\"edit('"+k.key+"','"+k.expiresAt+"','"+(k.maxDevices||1)+"')\">แก้ไข</button>"+
-    "<button class='danger' onclick=\"delKey('"+k.key+"')\">ลบ</button></td>"+
-    "</tr>";
-  }).join("");
- }catch(e){msg("❌ "+e.message)}
-}
-
-async function lock(key){
- if(!confirm("ล็อก KEY นี้?"))return;
- await api("/api/admin/keys/revoke",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({key})});
- loadKeys();
-}
-
-async function unlock(key){
- await api("/api/admin/keys/unrevoke",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({key})});
- loadKeys();
-}
-
-async function delKey(key){
- if(!confirm("ลบ KEY นี้ถาวร?"))return;
- await api("/api/admin/keys/delete",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({key})});
- loadKeys();
-}
-
-async function edit(key,expires,maxDevices){
- const e=prompt("วันหมดอายุ ISO เช่น 2026-12-31T23:59:59Z",expires);
- if(e===null)return;
- const m=prompt("จำนวนเครื่อง",maxDevices);
- if(m===null)return;
- try{
-  await api("/api/admin/keys/update",{
-   method:"POST",
-   headers:{"Content-Type":"application/json"},
-   body:JSON.stringify({key,expiresAt:e,maxDevices:Number(m)})
-  });
-  loadKeys();
- }catch(err){alert(err.message)}
-}
-
-$("plan").addEventListener("change",()=>{
- const p=$("plan").value;
- const d={day:[1,5],week:[7,15],month:[30,39],year:[365,199]}[p];
- if(d){$("days").value=d[0];$("price").value=d[1]}
-});
+let TOKEN="";const $=id=>document.getElementById(id);const esc=x=>String(x??"").replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]));
+function msg(t,ok=false){$("msg").innerHTML="<div class='"+(ok?"ok":"warn")+"'>"+esc(t)+"</div>"}
+async function api(url,options={}){options.headers={...(options.headers||{}),"x-admin-token":TOKEN};const r=await fetch(url,options);const j=await r.json().catch(()=>({error:"ตอบกลับไม่ใช่ JSON"}));if(!r.ok)throw Error(j.error||"เกิดข้อผิดพลาด");return j}
+async function load(){TOKEN=$("admin").value.trim();if(!TOKEN)return msg("กรุณากรอกรหัส ADMIN");try{await api("/api/admin/keys");["dashboard","panel","orders","list"].forEach(id=>$(id).style.display="block");msg("✅ ADMIN ใช้งานได้",true);refreshAll()}catch(e){TOKEN="";msg("❌ "+e.message)}}
+function fmt(x){return x?new Date(x).toLocaleString("th-TH",{timeZone:"Asia/Bangkok"}):"-"}
+async function refreshAll(){try{const [keys,orders]=await Promise.all([api("/api/admin/keys"),api("/api/admin/orders")]);renderKeys(keys);renderOrders(orders)}catch(e){msg("❌ "+e.message)}}
+function renderKeys(data){const keys=Object.values(data||{}),now=Date.now();let active=0;keys.forEach(k=>{if(!k.revoked&&now<Date.parse(k.expiresAt))active++});$("sAll").textContent=keys.length;$("sActive").textContent=active;$("sOff").textContent=keys.length-active;$("rows").innerHTML=keys.map(k=>{const on=!k.revoked&&now<Date.parse(k.expiresAt),status=k.revoked?"🔴 ล็อก":on?"🟢 ACTIVE":"⚪ หมดอายุ";return "<tr><td><b>"+esc(k.key)+"</b></td><td>"+fmt(k.startAt)+"</td><td>"+fmt(k.expiresAt)+"</td><td>"+(k.maxDevices||1)+"</td><td>"+status+"</td><td>"+(k.revoked?"<button onclick=\"unlock('"+esc(k.key)+"')\">ปลดล็อก</button>":"<button class=\"danger\" onclick=\"lock('"+esc(k.key)+"')\">ล็อก</button>")+"<button class=\"gray\" onclick=\"edit('"+esc(k.key)+"','"+esc(k.expiresAt)+"','"+(k.maxDevices||1)+"')\">แก้ไข</button><button class=\"danger\" onclick=\"delKey('"+esc(k.key)+"')\">ลบ</button></td></tr>"}).join("")}
+function renderOrders(data){const orders=Object.values(data||{});$("sPending").textContent=orders.filter(o=>o.status==="pending").length;$("orderRows").innerHTML=orders.map(o=>"<tr><td><b>"+esc(o.orderId)+"</b><br><span class='small'>"+fmt(o.createdAt)+"</span></td><td>"+esc(o.planLabel)+"</td><td>฿"+esc(o.price)+"</td><td>"+(o.status==="paid"?"🟢 PAID":"🟡 รอชำระ")+(o.paymentRef?"<br><span class='small'>"+esc(o.paymentRef)+"</span>":"")+"</td><td>"+(o.status==="paid"?"<span class='small'>KEY: "+esc(o.key||"-")+"</span>":"<button onclick=\"confirmOrder('"+esc(o.orderId)+"')\">✅ ยืนยันชำระเงิน</button>")+"</td></tr>").join("")||"<tr><td colspan='5'>ยังไม่มี Order</td></tr>"}
+async function createKey(){try{const plan=$("plan").value,j=await api("/api/admin/keys",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({plan,days:Number($("days").value),maxDevices:Number($("maxDevices").value),price:Number($("price").value)})});$("created").innerHTML="<div class='ok'>✅ สร้างสำเร็จ<br><b>"+esc(j.key)+"</b><br>หมดอายุ: "+fmt(j.license.expiresAt)+"</div>";refreshAll()}catch(e){alert(e.message)}}
+async function confirmOrder(orderId){const ref=prompt("เลขอ้างอิง/หมายเหตุการโอน (ถ้ามี)","ADMIN_CONFIRM");if(ref===null)return;try{const j=await api("/api/admin/orders/confirm",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({orderId,paymentRef:ref})});alert(j.key?"ยืนยันสำเร็จ • KEY: "+j.key:"สำเร็จ");refreshAll()}catch(e){alert(e.message)}}
+async function lock(key){if(!confirm("ล็อก KEY นี้?"))return;await api("/api/admin/keys/revoke",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({key})});refreshAll()}
+async function unlock(key){await api("/api/admin/keys/unrevoke",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({key})});refreshAll()}
+async function delKey(key){if(!confirm("ลบ KEY นี้ถาวร?"))return;await api("/api/admin/keys/delete",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({key})});refreshAll()}
+async function edit(key,expires,maxDevices){const e=prompt("วันหมดอายุ ISO เช่น 2026-12-31T23:59:59Z",expires);if(e===null)return;const m=prompt("จำนวนเครื่อง",maxDevices);if(m===null)return;try{await api("/api/admin/keys/update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({key,expiresAt:e,maxDevices:Number(m)})});refreshAll()}catch(err){alert(err.message)}}
+$("plan").addEventListener("change",()=>{const d={day:[1,5],week:[7,15],month:[30,39],year:[365,199]}[$("plan").value];if(d){$("days").value=d[0];$("price").value=d[1]}});
 </script>
-</body>
-</html>
+</body></html>
