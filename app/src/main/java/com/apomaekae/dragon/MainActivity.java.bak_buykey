@@ -34,7 +34,8 @@ public class MainActivity extends Activity {
     @Override public void onCreate(Bundle b) {
         super.onCreate(b);
 
-        // V9.1 แสดงหน้า LICENSE / KEY ก่อนเข้า DRAGON ZONE
+        // V9.1 เปิด DRAGON ZONE โดยตรง
+        // ไม่แสดงหน้า LICENSE / KEY อีกต่อไป
         root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
         root.setPadding(22, 18, 22, 18);
@@ -43,7 +44,7 @@ public class MainActivity extends Activity {
         scroll.addView(root);
         setContentView(scroll);
 
-        showLicensePage();
+        showZonePage();
         requestPermissionsIfNeeded();
     }
 
@@ -100,11 +101,6 @@ public class MainActivity extends Activity {
 
         check.setOnClickListener(v -> verifyKey());
         refresh.setOnClickListener(v -> verifyKey());
-
-        Button buyKey = new Button(this);
-        buyKey.setText("🛒 ซื้อ KEY ใหม่");
-        card.addView(buyKey, full());
-        buyKey.setOnClickListener(v -> openBuyKey());
 
         String saved = LicenseClient.getKey(this);
         if (!saved.isEmpty()) verifyKey();

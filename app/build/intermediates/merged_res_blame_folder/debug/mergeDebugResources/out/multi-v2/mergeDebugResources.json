@@ -4,7 +4,7 @@
             "outputFile": "com.apomaekae.dragon.app-debug-4:/values_values.arsc.flat",
             "map": [
                 {
-                    "source": "/data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/res/values/styles.xml",
+                    "source": "/data/data/com.termux/files/home/ApoMaeKae/app/src/main/res/values/styles.xml",
                     "from": {
                         "startLines": "1",
                         "startColumns": "4",
@@ -16,27 +16,27 @@
                     "to": {
                         "startLines": "3",
                         "startColumns": "4",
-                        "startOffsets": "120",
+                        "startOffsets": "121",
                         "endLines": "9",
                         "endColumns": "12",
-                        "endOffsets": "504"
+                        "endOffsets": "505"
                     }
                 },
                 {
-                    "source": "/data/data/com.termux/files/home/APO_MAEKAE_V9_DragonZone/APO_MAEKAE_V9_DragonZone/app/src/main/res/values/strings.xml",
+                    "source": "/data/data/com.termux/files/home/ApoMaeKae/app/src/main/res/values/strings.xml",
                     "from": {
                         "startLines": "1",
                         "startColumns": "4",
                         "startOffsets": "16",
-                        "endColumns": "64",
-                        "endOffsets": "76"
+                        "endColumns": "65",
+                        "endOffsets": "77"
                     },
                     "to": {
                         "startLines": "2",
                         "startColumns": "4",
                         "startOffsets": "55",
-                        "endColumns": "64",
-                        "endOffsets": "115"
+                        "endColumns": "65",
+                        "endOffsets": "116"
                     }
                 }
             ]

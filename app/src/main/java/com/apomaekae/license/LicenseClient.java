@@ -62,9 +62,11 @@ public final class LicenseClient {
             connection = (HttpURLConnection) url.openConnection();
 
             connection.setRequestMethod("POST");
-            connection.setConnectTimeout(15000);
-            connection.setReadTimeout(15000);
+            connection.setConnectTimeout(30000);
+            connection.setReadTimeout(30000);
             connection.setDoOutput(true);
+            connection.setInstanceFollowRedirects(true);
+            connection.setRequestProperty("User-Agent", "APO-MAEKAE-V9.1");
             connection.setRequestProperty(
                     "Content-Type",
                     "application/json; charset=UTF-8"

@@ -62,9 +62,9 @@ public final class LicenseClient {
             connection = (HttpURLConnection) url.openConnection();
 
             connection.setRequestMethod("POST");
-            connection.setConnectTimeout(30000);
-            connection.setReadTimeout(30000);
-            connection.setDoOutput(true);\n            connection.setInstanceFollowRedirects(true);\n            connection.setRequestProperty("User-Agent", "APO-MAEKAE-V9.1");
+            connection.setConnectTimeout(15000);
+            connection.setReadTimeout(15000);
+            connection.setDoOutput(true);
             connection.setRequestProperty(
                     "Content-Type",
                     "application/json; charset=UTF-8"
@@ -136,13 +136,7 @@ public final class LicenseClient {
             );
 
             if (active) {
-                context.getSharedPreferences("license", Context.MODE_PRIVATE)
-                        .edit()
-                        .putString("key", returnedKey.trim().toUpperCase())
-                        .putString("expires", expires)
-                        .putString("status", status)
-                        .apply();
-
+                saveKey(context, returnedKey);
                 return new Result(
                         true,
                         "LICENSE ACTIVE",
