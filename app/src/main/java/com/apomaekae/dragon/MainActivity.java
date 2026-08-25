@@ -33,7 +33,18 @@ public class MainActivity extends Activity {
 
     @Override public void onCreate(Bundle b) {
         super.onCreate(b);
-        showLicensePage();
+
+        // V9.1 เปิด DRAGON ZONE โดยตรง
+        // ไม่แสดงหน้า LICENSE / KEY อีกต่อไป
+        root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setPadding(22, 18, 22, 18);
+
+        ScrollView scroll = new ScrollView(this);
+        scroll.addView(root);
+        setContentView(scroll);
+
+        showZonePage();
         requestPermissionsIfNeeded();
     }
 
