@@ -6,7 +6,7 @@ const read=(f,d)=>{try{return JSON.parse(fs.readFileSync(f,"utf8"))}catch{return
 const send=(r,s,x,t="application/json; charset=utf-8")=>{r.writeHead(s,{"Content-Type":t,"Cache-Control":"no-store"});r.end(t.startsWith("application/json")?JSON.stringify(x):x)};
 const body=q=>new Promise((ok,bad)=>{let s="";q.on("data",c=>s+=c);q.on("end",()=>{try{ok(s?JSON.parse(s):{})}catch(e){bad(e)}})});
 const auth=q=>!!TOKEN&&q.headers["x-admin-token"]===TOKEN;
-const serve=(r,f)=>{try{let d=fs.readFileSync(f),e=path.extname(f),t=e===".html"?"text/html; charset=utf-8":e===".jpg"||e===".jpeg"?"image/jpeg":"application/octet-stream";send(r,200,d,t)}catch{send(r,404,{error:"not found"})}};
+const serve=(r,f)=>{try{let d=fs.readFileSync(f),e=path.extname(f),t=e===".html"?"text/html; charset=utf-8":e===".jpg"||e===".jpeg"?"image/jpeg":e===".png"?"image/png":e===".svg"?"image/svg+xml":"application/octet-stream";send(r,200,d,t)}catch{send(r,404,{error:"not found"})}};
 const key=()=> "APO-"+crypto.randomBytes(4).toString("hex").toUpperCase()+"-"+crypto.randomBytes(4).toString("hex").toUpperCase();
 function makeKey(o){let db=read(DB,{keys:{}}),k=key(),now=Date.now(),z=now+o.days*86400000;db.keys[k]={key:k,plan:o.plan,planLabel:o.planLabel,price:o.price,startAt:new Date(now).toISOString(),expiresAt:new Date(z).toISOString(),maxDevices:1,devices:[],revoked:false,orderId:o.orderId,paymentRef:o.paymentRef||"",createdAt:new Date().toISOString()};write(DB,db);return db.keys[k]}
 const pub=o=>({orderId:o.orderId,plan:o.plan,planLabel:o.planLabel,price:o.price,status:o.status,createdAt:o.createdAt,paidAt:o.paidAt||null,key:o.status==="paid"?o.key:null,expiresAt:o.status==="paid"?o.expiresAt:null});
@@ -15,6 +15,7 @@ if(q.method==="GET"&&(p==="/"||p==="/buy-key"||p==="/buy-key.html"))return serve
 if(q.method==="GET"&&(p==="/admin"||p==="/admin.html"))return serve(r,path.join(PUB,"admin.html"));
 if(q.method==="GET"&&(p==="/buy-key"||p==="/buy-key.html"))return serve(r,path.join(PUB,"buy-key.html"));
 if(q.method==="GET"&&p==="/apomaekae_bg.jpg")return serve(r,path.join(PUB,"apomaekae_bg.jpg"));
+if(q.method==="GET"&&p==="/payment_qr.svg")return serve(r,path.join(PUB,"payment_qr.svg"));
 if(q.method==="GET"&&p==="/payment_qr.jpg")return serve(r,path.join(PUB,"payment_qr.jpg"));
 if(q.method==="GET"&&p==="/api/health")return send(r,200,{ok:true,version:"V9.1",serverTime:Date.now()});
 if(q.method==="POST"&&p==="/api/license/check"){let b=await body(q),db=read(DB,{keys:{}}),k=db.keys[String(b.key||"").trim().toUpperCase()],now=Date.now();if(!k)return send(r,404,{active:false,message:"ไม่พบ Key",serverTime:now});let z=Date.parse(k.expiresAt);if(k.revoked)return send(r,200,{active:false,message:"Key ถูกระงับ",serverTime:now,expiresAt:z});if(now<Date.parse(k.startAt))return send(r,200,{active:false,message:"ยังไม่ถึงวันเริ่มใช้งาน",serverTime:now,expiresAt:z});if(now>=z)return send(r,200,{active:false,message:"Key หมดอายุแล้ว",serverTime:now,expiresAt:z});return send(r,200,{active:true,online:true,version:"V9.1",serverTime:now,expiresAt:z,plan:k.planLabel})}
