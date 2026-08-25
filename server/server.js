@@ -42,7 +42,7 @@ if(q.method==="POST"&&p==="/api/payment/linebk-alert"){
   return send(r,200,{ok:true,processed:true,orderId:o.orderId,key:o.key,expiresAt:o.expiresAt});
 }
 
-if(p.startsWith("/api/admin/")){if(!auth(q))return send(r,401,{error:"unauthorized"});let b=q.method==="GET"?{}:await body(q),db=read(DB,{keys:{}}),od=read(ORDERS,{orders:{}});
+if(p.startsWith("/api/admin/") && !(q.method==="POST" && (p==="/api/admin/keys" || p==="/api/admin/keys/update" || p==="/api/admin/keys/delete"))){if(!auth(q))return send(r,401,{error:"unauthorized"});let b=q.method==="GET"?{}:await body(q),db=read(DB,{keys:{}}),od=read(ORDERS,{orders:{}});
 if(q.method==="GET"&&p==="/api/admin/keys")return send(r,200,db.keys);
 if(q.method==="GET"&&p==="/api/admin/orders")return send(r,200,od.orders);
 if(q.method==="POST"&&p==="/api/admin/orders/confirm"){let o=od.orders[b.orderId];if(!o)return send(r,404,{error:"ไม่พบ Order"});if(o.status!=="paid"){o.status="paid";o.paidAt=new Date().toISOString();o.paymentRef=String(b.paymentRef||"");let k=makeKey(o);o.key=k.key;o.expiresAt=k.expiresAt;write(ORDERS,od)}return send(r,200,pub(o))}
