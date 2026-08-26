@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <style>
+        /* CSS เดิมที่ผมให้ไปก่อนหน้านี้ (เลื่อนได้เหมือนเดิม) */
+        :root { --primary-color: #00FF00; --bg-color: rgba(15, 15, 15, 0.98); --item-bg: #222222; --input-bg: #333333; }
+        body { margin: 0; padding: 10px; background: transparent; font-family: sans-serif; display: flex; justify-content: center; }
+        .menu-container { width: 100%; max-width: 340px; background: var(--bg-color); border: 1.5px solid var(--primary-color); border-radius: 18px; overflow: hidden; display: flex; flex-direction: column; max-height: 95vh; }
+        .header { background: #1a1a1a; padding: 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; }
+        .header-title { color: var(--primary-color); font-weight: bold; font-size: 15px; }
+        .scroll-content { padding: 12px; overflow-y: auto; flex-grow: 1; }
+        .item { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; margin-bottom: 10px; background: var(--item-bg); border-radius: 12px; color: #fff; }
+        .price-section { background: var(--item-bg); border-radius: 12px; padding: 12px; margin-bottom: 10px; border: 1px solid #333; }
+        .price-row { display: flex; gap: 10px; margin-top: 10px; }
+        input[type="number"] { background: var(--input-bg); border: 1px solid #444; color: var(--primary-color); padding: 10px; border-radius: 8px; width: 100%; box-sizing: border-box; }
+        .btn-save { background: var(--primary-color); color: #000; width: 100%; padding: 12px; border-radius: 10px; margin-top: 10px; font-weight: bold; }
+        .btn-close { background: #ff3b3b; color: white; width: 100%; padding: 12px; border-radius: 10px; margin-top: 10px; font-weight: bold; }
+        .switch { position: relative; width: 44px; height: 22px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: #444; transition: .3s; border-radius: 22px; }
+        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--primary-color); }
+        input:checked + .slider:before { transform: translateX(22px); }
+    </style>
+</head>
+<body onload="loadSettings()"> <div class="menu-container">
+    <div class="header">
+        <div class="header-title">🟢 LINEMAN PRO v2.0</div>
+        <div style="color:#666; font-size: 20px;" onclick="Android.minimize()">−</div>
+    </div>
+
+    <div class="scroll-content">
+        <div class="price-section">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="color:#fff; font-weight:bold;">ระบบล็อกราคา</span>
+                <label class="switch">
+                    <input type="checkbox" id="lock_price" onchange="updateSetting('lock_price', this.checked)">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="price-row">
+                <div class="price-group" style="flex:1;">
+                    <label style="font-size:11px; color:#888;">ขั้นต่ำ</label>
+                    <input type="number" id="minPrice" value="50">
+                </div>
+                <div class="price-group" style="flex:1;">
+                    <label style="font-size:11px; color:#888;">สูงสุด</label>
+                    <input type="number" id="maxPrice" value="250">
+                </div>
+            </div>
+            <button class="btn-save" onclick="savePriceSettings()">บันทึกและเริ่มงาน</button>
+        </div>
+
+        <div class="item">
+            <span>ปัดงานไม่ลด %</span>
+            <label class="switch">
+                <input type="checkbox" id="skip_job" onchange="updateSetting('skip_job', this.checked)">
+                <span class="slider"></span>
+            </label>
+        </div>
+
+        <div class="item">
+            <span>ยกเลิกงานไม่นับ %</span>
+            <label class="switch">
+                <input type="checkbox" id="cancel_job" onchange="updateSetting('cancel_job', this.checked)">
+                <span class="slider"></span>
+            </label>
+        </div>
+
+        <div class="item">
+            <span>Bypass Antiban 4.0</span>
+            <label class="switch">
+                <input type="checkbox" id="anti_ban" onchange="updateSetting('anti_ban', this.checked)">
+                <span class="slider"></span>
+            </label>
+        </div>
+
+        <button class="btn-close" onclick="Android.closeMenu()">ปิดระบบ Mod</button>
+    </div>
+</div>
+
+<script>
+    // --- ฟังก์ชันบันทึกค่าลงเครื่อง ---
+    function updateSetting(id, value) {
+        localStorage.setItem(id, value); // เก็บค่าเข้าคลัง (true/false)
+        Android.onToggle(id, value); // ส่งค่าไป Java
+    }
+
+    function savePriceSettings() {
+        const min = document.getElementById('minPrice').value;
+        const max = document.getElementById('maxPrice').value;
+        
+        localStorage.setItem('minPrice', min);
+        localStorage.setItem('maxPrice', max);
+        
+        Android.savePriceRange(min, max);
+    }
+
+    // --- ฟังก์ชันดึงค่ากลับมาแสดง (ทำงานตอนเปิดแอป) ---
+    function loadSettings() {
+        // รายการ ID ทั้งหมดที่ต้องการให้จำ
+        const toggles = ['lock_price', 'skip_job', 'cancel_job', 'anti_ban'];
+        
+        toggles.forEach(id => {
+            const savedValue = localStorage.getItem(id);
+            if (savedValue !== null) {
+                document.getElementById(id).checked = (savedValue === 'true');
+            }
+        });
+
+        // ดึงราคา
+        if (localStorage.getItem('minPrice')) {
+            document.getElementById('minPrice').value = localStorage.getItem('minPrice');
+        }
+        if (localStorage.getItem('maxPrice')) {
+            document.getElementById('maxPrice').value = localStorage.getItem('maxPrice');
+        }
+    }
+</script>
+
+</body>
+</html>
