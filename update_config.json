@@ -1,0 +1,11 @@
+{
+  "enabled": true,
+  "buffer_meters": 500,
+  "voice_enabled": true,
+  "job_stats_enabled": true,
+  "line_mode_pause_minutes": 10,
+  "dragon_count": 13,
+  "rain_mode_enabled": true,
+  "outer_mode_enabled": true,
+  "check_interval_seconds": 60
+}

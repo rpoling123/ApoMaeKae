@@ -8,7 +8,7 @@ android {
         applicationId 'com.apomaekae.dragon'
         minSdk 23
         targetSdk 35
-        versionCode 91
+        versionCode 92
         versionName '9.1'
     }
 }
