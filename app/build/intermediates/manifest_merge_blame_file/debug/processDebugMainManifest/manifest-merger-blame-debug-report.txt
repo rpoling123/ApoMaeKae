@@ -1,7 +1,7 @@
 1<?xml version="1.0" encoding="utf-8"?>
 2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
 3    package="com.apomaekae.dragon"
-4    android:versionCode="91"
+4    android:versionCode="93"
 5    android:versionName="9.1" >
 6
 7    <uses-sdk
