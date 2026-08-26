@@ -1,9 +1,9 @@
 {
   "app_name": "ApoMaeKae",
-  "version_name": "9.2.0",
-  "version_code": 92,
+  "version_name": "9.3.0",
+  "version_code": 93,
   "mandatory": false,
-  "apk_url": "https://github.com/rpoling123/ApoMaeKae/releases/download/v9.2.0/ApoMaeKae-v9.2.0.apk",
+  "apk_url": "https://github.com/rpoling123/ApoMaeKae/releases/download/v9.3.0/ApoMaeKae-v9.3.0.apk",
   "config_url": "https://raw.githubusercontent.com/rpoling123/ApoMaeKae/main/update_config.json",
   "release_notes": "Remote Update + Remote Config"
 }
