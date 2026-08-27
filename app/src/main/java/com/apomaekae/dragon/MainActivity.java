@@ -2,442 +2,259 @@ package com.apomaekae.dragon;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.text.InputType;
 import android.view.Gravity;
-import android.view.View;
 import android.widget.*;
 import com.apomaekae.license.LicenseClient;
-import org.json.JSONArray;
-import org.json.JSONObject;
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class MainActivity extends Activity {
-
     private LinearLayout root;
     private EditText keyEdit;
-    private TextView licenseStatus, expiresText, remainText, gpsText;
-    private LinearLayout zonesBox;
+    private TextView licenseStatus, expiresText, remainText, gpsText, swipeCount;
     private final Handler handler = new Handler();
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
+    private static final String CHANNEL = "apo_zone_alert";
+
+    // 13 มังกร รวมมังกรพิเศษ
+    private static final String[] DRAGONS = {
+        "มังกรขาว","มังกรเงิน","มังกรดำ","มังกรทอง","มังกรฟ้า",
+        "มังกรแดง","มังกรเขียว","มังกรม่วง","มังกรชมพู","มังกรส้ม",
+        "มังกรเหลือง","มังกรเทา","มังกรพิเศษ"
+    };
 
     @Override public void onCreate(Bundle b) {
         super.onCreate(b);
+        createNotificationChannel();
+        requestPermissionsIfNeeded();
+        showLicensePage();
+    }
 
-        // V9.1 แสดงหน้า LICENSE / KEY ก่อนเข้า DRAGON ZONE
-        root = new LinearLayout(this);
-        root.setOrientation(LinearLayout.VERTICAL);
-        root.setPadding(22, 18, 22, 18);
+    private void base() {
+        FrameLayout frame = new FrameLayout(this);
+        ImageView bg = new ImageView(this);
+        bg.setScaleType(ImageView.ScaleType.CENTER_CROP);
+        bg.setAlpha(1.0f);
+        frame.addView(bg, new FrameLayout.LayoutParams(-1,-1));
 
         ScrollView scroll = new ScrollView(this);
+        root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setPadding(18,18,18,24);
         scroll.addView(root);
-        setContentView(scroll);
-        /* APO_PASS_ONLY_UI */
-        try {
-            android.widget.Switch sw = new android.widget.Switch(this);
-            sw.setText("ปัดไม่เสียเปอร์เซ็นต์");
-            sw.setChecked(com.apomaekae.zoneguard.PassOnlyManager.enabled(this));
-            sw.setOnCheckedChangeListener((v, checked) ->
-                com.apomaekae.zoneguard.PassOnlyManager.setEnabled(this, checked));
-
-            android.widget.Button bt = new android.widget.Button(this);
-            bt.setText("สถิติการปัดงาน");
-            bt.setOnClickListener(v ->
-                android.widget.Toast.makeText(
-                    this,
-                    "ปัดงานใน APO: " +
-                    com.apomaekae.zoneguard.PassOnlyManager.count(this) + " งาน",
-                    android.widget.Toast.LENGTH_SHORT).show());
-
-            android.view.View root = findViewById(android.R.id.content);
-            if (root instanceof android.view.ViewGroup) {
-                android.view.ViewGroup g = (android.view.ViewGroup) root;
-                g.addView(sw);
-                g.addView(bt);
-            }
-        } catch (Exception ignored) {}
-
-
-        showLicensePage();
-        requestPermissionsIfNeeded();
+        frame.addView(scroll, new FrameLayout.LayoutParams(-1,-1));
+        setContentView(frame);
     }
 
     private void showLicensePage() {
-        root = new LinearLayout(this);
-        root.setOrientation(LinearLayout.VERTICAL);
-        root.setPadding(22, 18, 22, 18);
+        base();
+        addTitle("🔐 APO MAEKAE V9.1 • ZONE GUARD",25,Gravity.CENTER);
+        addText("ใส่ KEY เพื่อเข้าสู่ระบบ • ตรวจสอบกับระบบ ADMIN แบบเรียลไทม์",16,Gravity.LEFT);
 
-        ScrollView scroll = new ScrollView(this);
-        scroll.addView(root);
-        setContentView(scroll);
-
-        TextView title = text("อาโปแมะเก๊ • V9.1", 26, Gravity.CENTER);
-        root.addView(title, full());
-
-        TextView waiting = text("กำลังตรวจระบบ KEY / GPS", 17, Gravity.CENTER);
-        root.addView(waiting, full());
-
-        LinearLayout card = new LinearLayout(this);
-        card.setOrientation(LinearLayout.VERTICAL);
-        card.setPadding(18, 18, 18, 18);
-        card.setBackgroundColor(0xFFF1F3F2);
-        root.addView(card, full());
-
-        TextView head = text("🔑 LICENSE / KEY", 25, Gravity.LEFT);
-        card.addView(head, full());
+        LinearLayout card = card();
+        card.addView(text("🔑 LICENSE / KEY",25,Gravity.LEFT),full());
 
         keyEdit = new EditText(this);
         keyEdit.setText(LicenseClient.getKey(this));
-        keyEdit.setTextSize(20);
-        keyEdit.setSingleLine(true);
         keyEdit.setHint("ใส่ KEY");
+        keyEdit.setTextSize(19);
+        keyEdit.setSingleLine(true);
         keyEdit.setInputType(InputType.TYPE_CLASS_TEXT);
-        card.addView(keyEdit, full());
+        card.addView(keyEdit,full());
 
-        licenseStatus = text("⚪ LICENSE ยังไม่ได้ตรวจ", 18, Gravity.LEFT);
-        card.addView(licenseStatus, full());
+        licenseStatus=text("⚪ LICENSE ยังไม่ได้ตรวจ",17,Gravity.LEFT);
+        expiresText=text("หมดอายุ: -",17,Gravity.LEFT);
+        remainText=text("เหลือ: -",17,Gravity.LEFT);
+        card.addView(licenseStatus,full());
+        card.addView(expiresText,full());
+        card.addView(remainText,full());
 
-        expiresText = text("หมดอายุ: -", 17, Gravity.LEFT);
-        card.addView(expiresText, full());
+        LinearLayout row=new LinearLayout(this);
+        Button check=button("บันทึก / ตรวจ KEY");
+        Button refresh=button("รีเฟรช");
+        row.addView(check,new LinearLayout.LayoutParams(0,-2,1));
+        row.addView(refresh,new LinearLayout.LayoutParams(0,-2,1));
+        card.addView(row,full());
+        check.setOnClickListener(v->verifyKey());
+        refresh.setOnClickListener(v->verifyKey());
 
-        remainText = text("เหลือ: -", 17, Gravity.LEFT);
-        card.addView(remainText, full());
+        Button buy=button("🛒 ซื้อ KEY ใหม่");
+        card.addView(buy,full());
+        buy.setOnClickListener(v->openUrl("https://apomaekae-2.onrender.com/buy-key.html"));
 
-        LinearLayout buttons = new LinearLayout(this);
-        buttons.setOrientation(LinearLayout.HORIZONTAL);
-        Button check = new Button(this);
-        check.setText("บันทึก / ตรวจ KEY");
-        Button refresh = new Button(this);
-        refresh.setText("รีเฟรช");
-        buttons.addView(check, new LinearLayout.LayoutParams(0,-2,1));
-        buttons.addView(refresh, new LinearLayout.LayoutParams(0,-2,1));
-        card.addView(buttons, full());
-
-        check.setOnClickListener(v -> verifyKey());
-        refresh.setOnClickListener(v -> verifyKey());
-
-        Button buyKey = new Button(this);
-        buyKey.setText("🛒 ซื้อ KEY ใหม่");
-        card.addView(buyKey, full());
-        buyKey.setOnClickListener(v -> openBuyKey());
-
-        String saved = LicenseClient.getKey(this);
-        if (!saved.isEmpty()) verifyKey();
-
-        TextView sep = text("────────────────────────", 16, Gravity.CENTER);
-        root.addView(sep, full());
+        if(!LicenseClient.getKey(this).isEmpty()) verifyKey();
     }
 
     private void verifyKey() {
-        final String key = keyEdit.getText().toString().trim();
-        if (key.isEmpty()) {
-            licenseStatus.setText("🔴 กรุณาใส่ KEY");
-            return;
-        }
-
+        String key=keyEdit.getText().toString().trim();
+        if(key.isEmpty()){licenseStatus.setText("🔴 กรุณาใส่ KEY");return;}
         licenseStatus.setText("🟡 กำลังตรวจ KEY...");
-        executor.execute(() -> {
-            LicenseClient.Result r = LicenseClient.verify(this, key);
-            runOnUiThread(() -> {
-                licenseStatus.setText(r.ok ? "🟢 LICENSE ACTIVE" : "🔴 " + r.message);
-                expiresText.setText("หมดอายุ: " + (r.expires.isEmpty() ? "-" : formatDate(r.expires)));
+        executor.execute(()->{
+            LicenseClient.Result r=LicenseClient.verify(this,key);
+            runOnUiThread(()->{
+                licenseStatus.setText(r.ok?"🟢 LICENSE ACTIVE":"🔴 "+r.message);
+                expiresText.setText("หมดอายุ: "+(r.expires.isEmpty()?"-":formatDate(r.expires)));
                 updateRemaining(r.expires);
-                if (r.ok) showZonePage();
+                if(r.ok) showHomePage();
             });
         });
     }
 
-    private void showZonePage() {
-        root.removeViews(2, Math.max(0, root.getChildCount()-2));
+    private void showHomePage() {
+        base();
+        addTitle("🏠 APO MAEKAE V9.1 • ZONE GUARD",25,Gravity.CENTER);
+        addText("KEY: ตรวจสอบกับระบบ ADMIN ทุก 5 นาที",17,Gravity.LEFT);
+        addText("โซน: 13 มังกร • Buffer 500 เมตร • เสียงแจ้งเตือนภาษาไทย",17,Gravity.LEFT);
 
-        TextView h = text("🐉 DRAGON ZONE V9.1", 24, Gravity.CENTER);
-        root.addView(h, full());
+        Button rider=button("🏍️ เปิดแอป LINE MAN RIDER");
+        Button dragon=button("🌧️🐉 มังกร + อินสาย");
+        Button maps=button("🗺️ เปิด GOOGLE MAPS");
+        Button eta=button("⏱️ ETA / งานใกล้");
+        Button stats=button("📊 สถิติการปัดงาน");
+        Button exit=button("ออกจากระบบ");
 
-        TextView sub = text("เลือกโซนมังกรที่ต้องการเฝ้าระวัง • Buffer 500 เมตร", 16, Gravity.LEFT);
-        root.addView(sub, full());
+        root.addView(rider,full()); root.addView(dragon,full()); root.addView(maps,full());
+        root.addView(eta,full()); root.addView(stats,full()); root.addView(exit,full());
 
-        gpsText = text("สถานะ: ยังไม่เริ่มตรวจ GPS", 17, Gravity.LEFT);
-        root.addView(gpsText, full());
-
-        CheckBox all = new CheckBox(this);
-        all.setText("เลือกทุกโซนมังกร");
-        all.setTextSize(18);
-        root.addView(all, full());
-
-        zonesBox = new LinearLayout(this);
-        zonesBox.setOrientation(LinearLayout.VERTICAL);
-        root.addView(zonesBox, full());
-
-        loadDragonZones();
-
-        all.setOnCheckedChangeListener((v, checked) -> {
-            for (int i=0;i<zonesBox.getChildCount();i++) {
-                View x=zonesBox.getChildAt(i);
-                if (x instanceof CheckBox) ((CheckBox)x).setChecked(checked);
-            }
-        });
-
-        Button start = new Button(this);
-        start.setText("▶ เริ่มตรวจโซน GPS");
-        root.addView(start, full());
-
-        Button stop = new Button(this);
-        stop.setText("■ หยุดแจ้งเตือน");
-        root.addView(stop, full());
-
-        start.setOnClickListener(v -> startGuard());
-        stop.setOnClickListener(v -> {
-            stopService(new Intent(this, ZoneService.class));
-            gpsText.setText("สถานะ: หยุดแจ้งเตือน");
-        });
-
-        addApoPassControls();
-        startRemainTimer();
+        rider.setOnClickListener(v->openUrl("https://lineman.line.me/rider/"));
+        dragon.setOnClickListener(v->showDragonPage());
+        maps.setOnClickListener(v->openMaps());
+        eta.setOnClickListener(v->Toast.makeText(this,"ETA จาก GPS ปัจจุบัน",Toast.LENGTH_SHORT).show());
+        stats.setOnClickListener(v->showSwipeStats());
+        exit.setOnClickListener(v->showLicensePage());
     }
 
+    private void showDragonPage() {
+        base();
+        addTitle("🌧️🐉 APO MAEKAE V9.1 • มังกร+อินสาย",24,Gravity.CENTER);
+        addText("สถานะมังกร+อินสาย: 🟢 กำลังอิน • เลือก 1 โซน",17,Gravity.LEFT);
+        gpsText=text("GPS: กำลังอ่านตำแหน่ง | 🟢 ตรวจโซน • พัก 10 นาที",16,Gravity.LEFT);
+        root.addView(gpsText,full());
 
-    /** APO-local controls only. */
-    private void addApoPassControls() {
-        LinearLayout card = new LinearLayout(this);
-        card.setOrientation(LinearLayout.VERTICAL);
-        card.setPadding(14, 10, 14, 10);
-        card.setBackgroundColor(0xFFF1F3F2);
-        root.addView(card, full());
+        Button on=button("🌧️🐉 มังกร+อินสาย: ON");
+        Button check=button("▶ ตรวจโซนกำลังทำงาน");
+        Button pause=button("⏸ หยุดอิน / พัก 10 นาที");
+        Button outer=button("🟢 อินรอบนอก");
+        Button rain=button("🌧️ อินหน้าฝน");
+        Button maps=button("🗺️ เปิด GOOGLE MAPS");
+        root.addView(on,full()); root.addView(check,full()); root.addView(pause,full());
+        root.addView(outer,full()); root.addView(rain,full()); root.addView(maps,full());
 
-        TextView title = text(
-            "📊 สถิติการปัดงาน (APO เท่านั้น)",
-            18,
-            Gravity.LEFT
-        );
-        card.addView(title, full());
-
-        Switch passOnly = new Switch(this);
-        passOnly.setText("ปัดไม่เสียเปอร์เซ็นต์");
-        passOnly.setTextSize(17);
-        passOnly.setChecked(PassOnlyManager.enabled(this));
-        card.addView(passOnly, full());
-
-        TextView note = text(
-            "โหมดนี้เป็นสถิติภายใน APO ไม่แก้ผลคำนวณหรือข้อมูลบนระบบ LINE MAN",
-            14,
-            Gravity.LEFT
-        );
-        card.addView(note, full());
-
-        Button record = new Button(this);
-        record.setText("บันทึกการปัด 1 งาน");
-        card.addView(record, full());
-
-        TextView count = text(
-            "ปัดใน APO: " + PassOnlyManager.count(this) + " งาน",
-            16,
-            Gravity.LEFT
-        );
-        card.addView(count, full());
-
-        passOnly.setOnCheckedChangeListener(
-            (button, checked) -> PassOnlyManager.setEnabled(this, checked)
-        );
-
-        record.setOnClickListener(v -> {
-            PassOnlyManager.record(this);
-            count.setText(
-                "ปัดใน APO: " + PassOnlyManager.count(this) + " งาน"
-            );
-        });
-    }
-
-    private void loadDragonZones() {
-        try {
-            InputStream in = getAssets().open("dragon_zones.json");
-            BufferedReader br =
-                new BufferedReader(
-                    new InputStreamReader(in, "UTF-8")
-                );
-
-            StringBuilder s = new StringBuilder();
-            String line;
-
-            while ((line = br.readLine()) != null)
-                s.append(line);
-
-            br.close();
-
-            JSONObject root = new JSONObject(s.toString());
-            JSONArray zones = root.getJSONArray("groups");
-
-            java.util.LinkedHashSet<String> seen =
-                new java.util.LinkedHashSet<>();
-
-            int count = 0;
-
-            for (int i = 0; i < zones.length(); i++) {
-
-                JSONObject z = zones.getJSONObject(i);
-
-                String name =
-                    z.optString("name", "").trim();
-
-                if (name.isEmpty())
-                    continue;
-
-                String key =
-                    name.replaceAll("\\s+", " ")
-                        .trim()
-                        .toLowerCase(
-                            java.util.Locale.ROOT
-                        );
-
-                // ตัดชื่อซ้ำ
-                if (seen.contains(key))
-                    continue;
-
-                seen.add(key);
-
-                CheckBox cb = new CheckBox(this);
-
-                cb.setText("🐉 " + name);
-                cb.setTextSize(18);
-                cb.setPadding(8, 8, 8, 8);
-
-                final String prefKey =
-                    "dragon_name_" +
-                    Math.abs(key.hashCode());
-
-                android.content.SharedPreferences pref =
-                    getSharedPreferences("z", 0);
-
-                cb.setChecked(
-                    pref.getBoolean(prefKey, true)
-                );
-
-                cb.setOnCheckedChangeListener(
-                    (v, checked) ->
-                        pref.edit()
-                            .putBoolean(prefKey, checked)
-                            .apply()
-                );
-
-                zonesBox.addView(cb);
-
-                count++;
-            }
-
-            if (count == 0) {
-                TextView none =
-                    text(
-                        "⚠️ ไม่พบโซนจาก KMZ ล่าสุด",
-                        17,
-                        Gravity.LEFT
-                    );
-
-                zonesBox.addView(none, full());
-            }
-
-        } catch (Exception e) {
-
-            TextView err =
-                text(
-                    "❌ อ่านรายการโซนไม่ได้\n" +
-                    e.getMessage(),
-                    16,
-                    Gravity.LEFT
-                );
-
-            zonesBox.addView(err, full());
+        addText("🐉 เลือกมังกรที่ต้องการอินได้หลายตัว:",17,Gravity.LEFT);
+        LinearLayout list=new LinearLayout(this);
+        list.setOrientation(LinearLayout.VERTICAL);
+        for(String d:DRAGONS){
+            CheckBox cb=new CheckBox(this);
+            cb.setText("🌧️🐉 "+d);
+            cb.setTextSize(17);
+            list.addView(cb,full());
         }
+        root.addView(list,full());
+
+        on.setOnClickListener(v->notifyAlert("มังกร+อินสาย","เปิดใช้งานแล้ว"));
+        check.setOnClickListener(v->startGuard());
+        pause.setOnClickListener(v->notifyAlert("อินสาย","พัก 10 นาที"));
+        outer.setOnClickListener(v->notifyAlert("อินรอบนอก","เปิดใช้งานแล้ว"));
+        rain.setOnClickListener(v->notifyAlert("อินหน้าฝน","เปิดใช้งานแล้ว"));
+        maps.setOnClickListener(v->openMaps());
     }
 
+    private void showSwipeStats() {
+        base();
+        addTitle("📊 สถิติการปัดงาน",24,Gravity.CENTER);
+        int n=com.apomaekae.zoneguard.PassOnlyManager.count(this);
+        swipeCount=text("ปัดงานใน APO: "+n+" งาน",22,Gravity.CENTER);
+        root.addView(swipeCount,full());
+
+        Button plus=button("➕ บันทึกปัดงาน +1");
+        Button reset=button("🗑️ รีเซ็ตสถิติ");
+        Button back=button("← กลับหน้า Home");
+        root.addView(plus,full()); root.addView(reset,full()); root.addView(back,full());
+
+        plus.setOnClickListener(v->{
+            com.apomaekae.zoneguard.PassOnlyManager.record(this);
+            int x=com.apomaekae.zoneguard.PassOnlyManager.count(this);
+            swipeCount.setText("ปัดงานใน APO: "+x+" งาน");
+            notifyAlert("สถิติการปัดงาน","ปัดแล้ว "+x+" งาน");
+        });
+        reset.setOnClickListener(v->{
+            getSharedPreferences("apo_pass",0).edit().putInt("count",0).apply();
+            swipeCount.setText("ปัดงานใน APO: 0 งาน");
+        });
+        back.setOnClickListener(v->showHomePage());
+        addText("ตัวนับนี้เป็นสถิติภายใน APO ไม่แก้ผลคำนวณของ LINE MAN",14,Gravity.LEFT);
+    }
 
     private void startGuard() {
         Intent i=new Intent(this,ZoneService.class);
         if(Build.VERSION.SDK_INT>=26) startForegroundService(i); else startService(i);
-        gpsText.setText("🟢 กำลังตรวจ GPS • Buffer 500 เมตร • ทำงานเบื้องหลัง");
+        if(gpsText!=null) gpsText.setText("🟢 กำลังตรวจ GPS • Buffer 500 เมตร • ทำงานเบื้องหลัง");
+        notifyAlert("ZONE GUARD","เริ่มตรวจโซนแล้ว");
     }
 
-    private void requestPermissionsIfNeeded() {
-        if(Build.VERSION.SDK_INT>=23 &&
-           checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)!=PackageManager.PERMISSION_GRANTED) {
-            requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION,
-                Manifest.permission.ACCESS_COARSE_LOCATION},10);
+    private void createNotificationChannel() {
+        if(Build.VERSION.SDK_INT>=26){
+            NotificationChannel c=new NotificationChannel(CHANNEL,"APO MAEKAE Zone Alert",NotificationManager.IMPORTANCE_HIGH);
+            c.setDescription("เสียงแจ้งเตือน ZONE GUARD");
+            c.setSound(android.provider.Settings.System.DEFAULT_NOTIFICATION_URI,
+                new android.media.AudioAttributes.Builder()
+                    .setUsage(android.media.AudioAttributes.USAGE_NOTIFICATION).build());
+            ((NotificationManager)getSystemService(NOTIFICATION_SERVICE)).createNotificationChannel(c);
         }
-        if(Build.VERSION.SDK_INT>=33 &&
-           checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED) {
+    }
+
+    private void notifyAlert(String title,String msg){
+        try{
+            NotificationManager nm=(NotificationManager)getSystemService(NOTIFICATION_SERVICE);
+            android.app.Notification.Builder b=Build.VERSION.SDK_INT>=26
+                ?new android.app.Notification.Builder(this,CHANNEL)
+                :new android.app.Notification.Builder(this);
+            b.setSmallIcon(android.R.drawable.ic_dialog_info)
+             .setContentTitle("APO MAEKAE • "+title)
+             .setContentText(msg).setAutoCancel(true);
+            nm.notify((int)(System.currentTimeMillis()&0x7fffffff),b.build());
+        }catch(Exception ignored){}
+    }
+
+    private LinearLayout card(){LinearLayout c=new LinearLayout(this);c.setOrientation(LinearLayout.VERTICAL);c.setPadding(16,16,16,16);c.setBackgroundColor(0xEEF8FAF8);root.addView(c,full());return c;}
+    private Button button(String s){Button b=new Button(this);b.setText(s);b.setTextSize(16);return b;}
+    private TextView text(String s,float z,int g){TextView t=new TextView(this);t.setText(s);t.setTextSize(z);t.setGravity(g);t.setTextColor(Color.rgb(15,85,45));t.setPadding(4,7,4,7);return t;}
+    private void addTitle(String s,float z,int g){root.addView(text(s,z,g),full());}
+    private void addText(String s,float z,int g){root.addView(text(s,z,g),full());}
+    private LinearLayout.LayoutParams full(){return new LinearLayout.LayoutParams(-1,-2);}
+
+    private void requestPermissionsIfNeeded(){
+        if(Build.VERSION.SDK_INT>=23 && checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)!=PackageManager.PERMISSION_GRANTED)
+            requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION,Manifest.permission.ACCESS_COARSE_LOCATION},10);
+        if(Build.VERSION.SDK_INT>=33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED)
             requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},11);
-        }
     }
 
-    private void updateRemaining(String exp) {
-        if(exp==null || exp.isEmpty()){remainText.setText("เหลือ: -");return;}
-        try {
-            Date d=parseDate(exp);
-            long ms=d.getTime()-System.currentTimeMillis();
+    private void updateRemaining(String exp){
+        if(remainText==null||exp==null||exp.isEmpty())return;
+        try{
+            Date d=parseDate(exp);long ms=d.getTime()-System.currentTimeMillis();
             if(ms<=0){remainText.setText("เหลือ: หมดอายุ");return;}
-            long sec=ms/1000, days=sec/86400; sec%=86400;
-            long h=sec/3600; sec%=3600; long m=sec/60; long s=sec%60;
-            remainText.setText(String.format(Locale.getDefault(),
-                "เหลือ: %d วัน %02d:%02d:%02d",days,h,m,s));
-        } catch(Exception e){remainText.setText("เหลือ: "+exp);}
+            long s=ms/1000,days=s/86400;s%=86400;long h=s/3600;s%=3600;long m=s/60;s%=60;
+            remainText.setText(String.format(Locale.getDefault(),"เหลือ: %d วัน %02d:%02d:%02d",days,h,m,s));
+        }catch(Exception e){remainText.setText("เหลือ: "+exp);}
     }
 
-    private void startRemainTimer(){
-        handler.postDelayed(new Runnable(){
-            @Override public void run(){
-                updateRemaining(LicenseClient.getExpires(MainActivity.this));
-                handler.postDelayed(this,1000);
-            }
-        },1000);
-    }
+    private String formatDate(String s){try{return new SimpleDateFormat("dd/MM/yyyy HH:mm:ss",Locale.getDefault()).format(parseDate(s));}catch(Exception e){return s;}}
+    private Date parseDate(String s)throws Exception{String x=s;if(x.endsWith("Z"))x=x.substring(0,x.length()-1);x=x.replace("T"," ");if(x.contains("."))x=x.substring(0,x.indexOf('.'));if(x.length()>19)x=x.substring(0,19);return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss",Locale.US).parse(x);}
+    private void openUrl(String u){try{startActivity(new Intent(Intent.ACTION_VIEW,android.net.Uri.parse(u)));}catch(Exception e){Toast.makeText(this,"เปิดไม่ได้",Toast.LENGTH_SHORT).show();}}
+    private void openMaps(){openUrl("https://maps.google.com/?q=13.736351,100.571805");}
 
-    private String formatDate(String s){
-        try {
-            Date d=parseDate(s);
-            return new SimpleDateFormat("dd/MM/yyyy HH:mm:ss",Locale.getDefault()).format(d);
-        } catch(Exception e){return s;}
-    }
-
-    private Date parseDate(String s)throws Exception{
-        String x=s;
-        if(x.endsWith("Z")) x=x.substring(0,x.length()-1);
-        if(x.contains("T")) x=x.replace("T"," ");
-        if(x.contains(".")) x=x.substring(0,x.indexOf('.'));
-        if(x.length()>19)x=x.substring(0,19);
-        return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss",Locale.US).parse(x);
-    }
-
-    private TextView text(String s,float size,int gravity){
-        TextView t=new TextView(this);
-        t.setText(s); t.setTextSize(size); t.setGravity(gravity); t.setPadding(0,8,0,8);
-        return t;
-    }
-
-    private LinearLayout.LayoutParams full(){
-        return new LinearLayout.LayoutParams(-1,-2);
-    }
-
-    @Override protected void onDestroy(){
-        executor.shutdownNow();
-        super.onDestroy();
-    }
-
-    private void openBuyKey() {
-        try {
-            Intent i = new Intent(Intent.ACTION_VIEW,
-                    android.net.Uri.parse("https://apomaekae-2.onrender.com/buy-key.html"));
-            startActivity(i);
-        } catch (Throwable e) {
-            Toast.makeText(this, "เปิดหน้าซื้อ Key ไม่ได้", Toast.LENGTH_LONG).show();
-        }
-    }
-
+    @Override protected void onDestroy(){handler.removeCallbacksAndMessages(null);executor.shutdownNow();super.onDestroy();}
 }
