@@ -4,7 +4,6 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Intent;
 import android.net.Uri;
-import android.view.View;
 import android.widget.Toast;
 
 import org.json.JSONArray;
@@ -23,86 +22,57 @@ public final class UpdateManager {
     private UpdateManager() {}
 
     public static void check(Activity activity) {
-
         new Thread(() -> {
-
             try {
-
                 String currentVersion =
-                        LicenseClient.getAppVersion(activity);
+                        cleanVersion(LicenseClient.getAppVersion(activity));
 
-                String latestVersion =
-                        LicenseClient.getLatestVersion(activity);
+                ReleaseInfo latest = getLatestRelease();
 
-                /*
-                 * ใช้ latestVersion จากระบบ KEY เป็นหลัก
-                 */
-                if (latestVersion == null ||
-                        latestVersion.trim().isEmpty()) {
-
-                    latestVersion = currentVersion;
-                }
-
-                latestVersion = cleanVersion(latestVersion);
-                currentVersion = cleanVersion(currentVersion);
-
-                /*
-                 * ⭐ สำคัญ
-                 *
-                 * ถ้าเป็น Version ล่าสุดแล้ว
-                 * ไม่ต้องแสดง Download
-                 */
-                if (compareVersion(
-                        currentVersion,
-                        latestVersion
-                ) >= 0) {
-
+                if (latest == null) {
                     return;
                 }
 
                 /*
-                 * มี Version ใหม่
-                 * หา APK จาก GitHub Release
+                 * สำคัญ:
+                 * Version ล่าสุดต้องมาจาก GitHub Release เท่านั้น
+                 * ห้ามสร้าง Version เอง
                  */
-                String apkUrl =
-                        getLatestApkUrl();
+                if (compareVersion(
+                        currentVersion,
+                        latest.version
+                ) >= 0) {
 
-                if (apkUrl == null ||
-                        apkUrl.isEmpty()) {
-
-                    apkUrl =
-                            "https://github.com/rpoling123/ApoMaeKae/releases/latest";
+                    // เป็นเวอร์ชันล่าสุดแล้ว
+                    return;
                 }
 
-                String finalLatestVersion =
-                        latestVersion;
-
-                String finalApkUrl =
-                        apkUrl;
+                /*
+                 * แสดงดาวน์โหลดเฉพาะเมื่อ GitHub มี Version ใหม่จริง
+                 * และมี APK asset จริง
+                 */
+                if (latest.apkUrl.isEmpty()) {
+                    return;
+                }
 
                 activity.runOnUiThread(() -> {
 
                     new AlertDialog.Builder(activity)
-
                             .setTitle("📦 มีเวอร์ชันใหม่")
-
                             .setMessage(
-                                    "เวอร์ชันปัจจุบัน : " +
-                                    currentVersion +
-                                    "\n\n" +
-                                    "เวอร์ชันล่าสุด : " +
-                                    finalLatestVersion +
-                                    "\n\n" +
-                                    "กรุณาอัปเดตเพื่อใช้งานต่อ"
+                                    "เวอร์ชันปัจจุบัน : "
+                                            + currentVersion
+                                            + "\n\n"
+                                            + "เวอร์ชันล่าสุด : "
+                                            + latest.version
+                                            + "\n\n"
+                                            + "พบ APK จาก GitHub Release"
                             )
-
                             .setCancelable(false)
-
                             .setNegativeButton(
                                     "ภายหลัง",
                                     null
                             )
-
                             .setPositiveButton(
                                     "ดาวน์โหลด",
                                     (dialog, which) -> {
@@ -112,7 +82,9 @@ public final class UpdateManager {
                                             Intent intent =
                                                     new Intent(
                                                             Intent.ACTION_VIEW,
-                                                            Uri.parse(finalApkUrl)
+                                                            Uri.parse(
+                                                                    latest.apkUrl
+                                                            )
                                                     );
 
                                             activity.startActivity(
@@ -123,34 +95,31 @@ public final class UpdateManager {
 
                                             Toast.makeText(
                                                     activity,
-                                                    "เปิดหน้าดาวน์โหลดไม่สำเร็จ",
+                                                    "เปิดดาวน์โหลดไม่สำเร็จ",
                                                     Toast.LENGTH_LONG
                                             ).show();
                                         }
                                     }
                             )
-
                             .show();
                 });
 
             } catch (Exception ignored) {
+                // ระบบ Update ห้ามทำให้แอปหลักล้ม
             }
-
         }).start();
     }
 
-    private static String getLatestApkUrl() {
+    private static ReleaseInfo getLatestRelease() {
 
         HttpURLConnection connection = null;
 
         try {
 
-            URL url =
-                    new URL(GITHUB_API);
+            URL url = new URL(GITHUB_API);
 
             connection =
-                    (HttpURLConnection)
-                            url.openConnection();
+                    (HttpURLConnection) url.openConnection();
 
             connection.setRequestMethod("GET");
             connection.setConnectTimeout(15000);
@@ -166,11 +135,8 @@ public final class UpdateManager {
                     "APO-MAE-KAE"
             );
 
-            int code =
-                    connection.getResponseCode();
-
-            if (code != 200) {
-                return "";
+            if (connection.getResponseCode() != 200) {
+                return null;
             }
 
             BufferedReader reader =
@@ -181,33 +147,55 @@ public final class UpdateManager {
                             )
                     );
 
-            StringBuilder result =
+            StringBuilder json =
                     new StringBuilder();
 
             String line;
 
             while ((line = reader.readLine()) != null) {
-                result.append(line);
+                json.append(line);
             }
 
             reader.close();
 
             JSONObject release =
-                    new JSONObject(result.toString());
+                    new JSONObject(json.toString());
+
+            /*
+             * ใช้ Version จาก GitHub Release จริง
+             * เช่น v9.2.0
+             */
+            String latestVersion =
+                    cleanVersion(
+                            release.optString(
+                                    "tag_name",
+                                    ""
+                            )
+                    );
+
+            if (latestVersion.isEmpty()) {
+                return null;
+            }
 
             JSONArray assets =
                     release.optJSONArray("assets");
 
             if (assets == null) {
-                return "";
+                return null;
             }
+
+            String apkUrl = "";
 
             for (int i = 0;
                  i < assets.length();
                  i++) {
 
                 JSONObject asset =
-                        assets.getJSONObject(i);
+                        assets.optJSONObject(i);
+
+                if (asset == null) {
+                    continue;
+                }
 
                 String name =
                         asset.optString(
@@ -215,22 +203,36 @@ public final class UpdateManager {
                                 ""
                         );
 
-                String download =
+                String downloadUrl =
                         asset.optString(
                                 "browser_download_url",
                                 ""
                         );
 
-                if (name.toLowerCase()
-                        .endsWith(".apk")
+                if (
+                        name.toLowerCase()
+                                .endsWith(".apk")
                         &&
-                        !download.isEmpty()) {
+                        !downloadUrl.isEmpty()
+                ) {
 
-                    return download;
+                    apkUrl = downloadUrl;
+                    break;
                 }
             }
 
+            if (apkUrl.isEmpty()) {
+                return null;
+            }
+
+            return new ReleaseInfo(
+                    latestVersion,
+                    apkUrl
+            );
+
         } catch (Exception ignored) {
+
+            return null;
 
         } finally {
 
@@ -238,8 +240,6 @@ public final class UpdateManager {
                 connection.disconnect();
             }
         }
-
-        return "";
     }
 
     private static String cleanVersion(
@@ -250,31 +250,33 @@ public final class UpdateManager {
             return "";
         }
 
-        version =
-                version.trim()
-                        .replace("v", "")
-                        .replace("V", "");
-
-        return version;
+        return version
+                .trim()
+                .replaceFirst(
+                        "^[vV]",
+                        ""
+                );
     }
 
     private static int compareVersion(
-            String a,
-            String b
+            String current,
+            String latest
     ) {
 
         try {
 
-            String[] aa =
-                    cleanVersion(a).split("\\.");
+            String[] a =
+                    cleanVersion(current)
+                            .split("\\.");
 
-            String[] bb =
-                    cleanVersion(b).split("\\.");
+            String[] b =
+                    cleanVersion(latest)
+                            .split("\\.");
 
             int length =
                     Math.max(
-                            aa.length,
-                            bb.length
+                            a.length,
+                            b.length
                     );
 
             for (int i = 0;
@@ -282,13 +284,13 @@ public final class UpdateManager {
                  i++) {
 
                 int x =
-                        i < aa.length
-                                ? Integer.parseInt(aa[i])
+                        i < a.length
+                                ? Integer.parseInt(a[i])
                                 : 0;
 
                 int y =
-                        i < bb.length
-                                ? Integer.parseInt(bb[i])
+                        i < b.length
+                                ? Integer.parseInt(b[i])
                                 : 0;
 
                 if (x < y) {
@@ -300,9 +302,28 @@ public final class UpdateManager {
                 }
             }
 
-        } catch (Exception ignored) {
-        }
+            return 0;
 
-        return a.equals(b) ? 0 : -1;
+        } catch (Exception ignored) {
+
+            // อ่าน Version ไม่ได้
+            // ไม่แสดง Update
+            return 0;
+        }
+    }
+
+    private static final class ReleaseInfo {
+
+        final String version;
+        final String apkUrl;
+
+        ReleaseInfo(
+                String version,
+                String apkUrl
+        ) {
+
+            this.version = version;
+            this.apkUrl = apkUrl;
+        }
     }
 }
