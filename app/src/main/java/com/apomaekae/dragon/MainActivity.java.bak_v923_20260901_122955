@@ -6,6 +6,9 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
@@ -18,12 +21,19 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
 public class MainActivity extends Activity {
-    
-    // REALTIME GPS + KEY DATE/TIME
-private LinearLayout root;
+
+    // APO_V923_REALTIME_GPS
+    private LocationManager apoLocationManager;
+    private LocationListener apoLocationListener;
+    private Location apoCurrentLocation;
+    private android.os.Handler apoGpsHandler = new android.os.Handler();
+
+
+    private LinearLayout root;
     private EditText keyEdit;
-    private TextView licenseStatus, expiresText, remainText, gpsText, swipeCount, keyDateTimeText;
+    private TextView licenseStatus, expiresText, remainText, gpsText, swipeCount;
     private final Handler handler = new Handler();
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private static final String CHANNEL = "apo_zone_alert";
@@ -40,8 +50,8 @@ private LinearLayout root;
         createNotificationChannel();
         ThaiVoice.init(this);
         requestPermissionsIfNeeded();
+startApoRealtimeGps();
         showLicensePage();
-        UpdateManager.check(this);
     }
 
     private void base() {
@@ -58,14 +68,6 @@ private LinearLayout root;
         scroll.addView(root);
         frame.addView(scroll, new FrameLayout.LayoutParams(-1,-1));
         setContentView(frame);
-        try {
-            Intent gpsServiceIntent = new Intent(this, RealtimeGpsService.class);
-            if (android.os.Build.VERSION.SDK_INT >= 26) {
-                startForegroundService(gpsServiceIntent);
-            } else {
-                startService(gpsServiceIntent);
-            }
-        } catch (Exception ignored) {}
     }
 
     private void showLicensePage() {
@@ -117,12 +119,6 @@ private LinearLayout root;
                 licenseStatus.setText(r.ok?"🟢 LICENSE ACTIVE":"🔴 "+r.message);
                 expiresText.setText("หมดอายุ: "+(r.expires.isEmpty()?"-":formatDate(r.expires)));
                 updateRemaining(r.expires);
-                if(keyDateTimeText!=null){
-                    keyDateTimeText.setText(
-                        "📅 วันเวลา KEY หมดอายุ: " +
-                        (r.expires.isEmpty() ? "-" : formatDateTime(r.expires))
-                    );
-                }
                 if(r.ok) showHomePage();
             });
         });
@@ -252,28 +248,145 @@ private LinearLayout root;
     private void addText(String s,float z,int g){root.addView(text(s,z,g),full());}
     private LinearLayout.LayoutParams full(){return new LinearLayout.LayoutParams(-1,-2);}
 
+
+    // ============================================================
+    // APO V9.2.3 • REALTIME CURRENT GPS
+    // ============================================================
+
+    private void startApoRealtimeGps() {
+        try {
+            apoLocationManager =
+                    (LocationManager)getSystemService(LOCATION_SERVICE);
+
+            apoLocationListener = new LocationListener() {
+                @Override
+                public void onLocationChanged(Location location) {
+                    if (location == null) return;
+
+                    apoCurrentLocation = location;
+
+                    // แสดงตำแหน่งล่าสุดในช่อง GPS ถ้ามี
+                    try {
+                        if (gps != null) {
+                            gps.setText(
+                                String.format(
+                                    Locale.US,
+                                    "📍 GPS ปัจจุบัน: %.6f, %.6f\nความแม่นยำ %.0f เมตร • REALTIME",
+                                    location.getLatitude(),
+                                    location.getLongitude(),
+                                    location.hasAccuracy()
+                                        ? location.getAccuracy()
+                                        : 0
+                                )
+                            );
+                        }
+                    } catch (Exception ignored) {}
+                }
+
+                @Override public void onProviderEnabled(String provider) {}
+                @Override public void onProviderDisabled(String provider) {}
+            };
+
+            if (Build.VERSION.SDK_INT >= 23 &&
+                checkSelfPermission(
+                    Manifest.permission.ACCESS_FINE_LOCATION
+                ) != PackageManager.PERMISSION_GRANTED) {
+                return;
+            }
+
+            apoLocationManager.requestLocationUpdates(
+                    LocationManager.GPS_PROVIDER,
+                    2000L,
+                    3.0f,
+                    apoLocationListener
+            );
+
+            // ดึง last known location ทันที
+            Location last =
+                    apoLocationManager.getLastKnownLocation(
+                            LocationManager.GPS_PROVIDER);
+
+            if (last == null) {
+                last =
+                    apoLocationManager.getLastKnownLocation(
+                            LocationManager.NETWORK_PROVIDER);
+            }
+
+            if (last != null) {
+                apoCurrentLocation = last;
+            }
+
+        } catch (Exception e) {
+            try {
+                if (gps != null)
+                    gps.setText("📍 GPS: รอสิทธิ์ตำแหน่ง");
+            } catch (Exception ignored) {}
+        }
+    }
+
+    private void openCurrentGoogleMaps() {
+        try {
+            Location l = apoCurrentLocation;
+
+            if (l == null && apoLocationManager != null) {
+                if (Build.VERSION.SDK_INT < 23 ||
+                    checkSelfPermission(
+                        Manifest.permission.ACCESS_FINE_LOCATION
+                    ) == PackageManager.PERMISSION_GRANTED) {
+
+                    l = apoLocationManager.getLastKnownLocation(
+                            LocationManager.GPS_PROVIDER);
+
+                    if (l == null) {
+                        l = apoLocationManager.getLastKnownLocation(
+                                LocationManager.NETWORK_PROVIDER);
+                    }
+                }
+            }
+
+            if (l == null) {
+                Toast.makeText(
+                        this,
+                        "ยังไม่พบตำแหน่ง GPS ปัจจุบัน",
+                        Toast.LENGTH_LONG
+                ).show();
+                return;
+            }
+
+            double lat = l.getLatitude();
+            double lon = l.getLongitude();
+
+            Uri uri = Uri.parse(
+                    "geo:" + lat + "," + lon +
+                    "?z=17&q=" + lat + "," + lon
+            );
+
+            Intent intent =
+                    new Intent(Intent.ACTION_VIEW, uri);
+
+            intent.setPackage("com.google.android.apps.maps");
+
+            try {
+                startActivity(intent);
+            } catch (Exception noGoogleMaps) {
+                intent.setPackage(null);
+                startActivity(intent);
+            }
+
+        } catch (Exception e) {
+            Toast.makeText(
+                    this,
+                    "เปิด Google Maps ไม่ได้",
+                    Toast.LENGTH_LONG
+            ).show();
+        }
+    }
+
     private void requestPermissionsIfNeeded(){
         if(Build.VERSION.SDK_INT>=23 && checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)!=PackageManager.PERMISSION_GRANTED)
             requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION,Manifest.permission.ACCESS_COARSE_LOCATION},10);
         if(Build.VERSION.SDK_INT>=33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED)
             requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},11);
-    }
-
-    private String formatDateTime(String value){
-        try{
-            long t;
-            try{
-                t=Long.parseLong(value);
-            }catch(Exception e){
-                t=new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm:ss", java.util.Locale.getDefault()).parse(value).getTime();
-            }
-            return new java.text.SimpleDateFormat(
-                "dd/MM/yyyy HH:mm:ss",
-                java.util.Locale.getDefault()
-            ).format(new java.util.Date(t));
-        }catch(Exception e){
-            return value;
-        }
     }
 
     private void updateRemaining(String exp){
@@ -291,5 +404,6 @@ private LinearLayout root;
     private void openUrl(String u){try{startActivity(new Intent(Intent.ACTION_VIEW,android.net.Uri.parse(u)));}catch(Exception e){Toast.makeText(this,"เปิดไม่ได้",Toast.LENGTH_SHORT).show();}}
     private void openMaps(){openUrl("https://maps.google.com/?q=13.736351,100.571805");}
 
-    @Override protected void onDestroy(){handler.removeCallbacksAndMessages(null);executor.shutdownNow();super.onDestroy();}
+    @Override protected void onDestroy(){handler.removeCallbacksAndMessages(null);executor.shutdownNow();stopApoRealtimeGps();
+        super.onDestroy();}
 }

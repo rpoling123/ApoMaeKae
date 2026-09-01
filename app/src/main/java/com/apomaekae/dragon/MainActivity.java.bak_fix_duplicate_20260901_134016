@@ -21,9 +21,12 @@ import java.util.concurrent.Executors;
 public class MainActivity extends Activity {
     
     // REALTIME GPS + KEY DATE/TIME
-private LinearLayout root;
+    private TextView gpsText;
+    private TextView keyDateTimeText;
+
+    private LinearLayout root;
     private EditText keyEdit;
-    private TextView licenseStatus, expiresText, remainText, gpsText, swipeCount, keyDateTimeText;
+    private TextView licenseStatus, expiresText, remainText, gpsText, swipeCount;
     private final Handler handler = new Handler();
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private static final String CHANNEL = "apo_zone_alert";
@@ -41,7 +44,6 @@ private LinearLayout root;
         ThaiVoice.init(this);
         requestPermissionsIfNeeded();
         showLicensePage();
-        UpdateManager.check(this);
     }
 
     private void base() {
@@ -58,14 +60,6 @@ private LinearLayout root;
         scroll.addView(root);
         frame.addView(scroll, new FrameLayout.LayoutParams(-1,-1));
         setContentView(frame);
-        try {
-            Intent gpsServiceIntent = new Intent(this, RealtimeGpsService.class);
-            if (android.os.Build.VERSION.SDK_INT >= 26) {
-                startForegroundService(gpsServiceIntent);
-            } else {
-                startService(gpsServiceIntent);
-            }
-        } catch (Exception ignored) {}
     }
 
     private void showLicensePage() {
@@ -265,7 +259,8 @@ private LinearLayout root;
             try{
                 t=Long.parseLong(value);
             }catch(Exception e){
-                t=new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm:ss", java.util.Locale.getDefault()).parse(value).getTime();
+                t=java.text.SimpleDateFormat
+                    .parse(value).getTime();
             }
             return new java.text.SimpleDateFormat(
                 "dd/MM/yyyy HH:mm:ss",

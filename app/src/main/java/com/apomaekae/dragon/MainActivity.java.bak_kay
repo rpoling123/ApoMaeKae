@@ -41,7 +41,6 @@ private LinearLayout root;
         ThaiVoice.init(this);
         requestPermissionsIfNeeded();
         showLicensePage();
-        UpdateManager.check(this);
     }
 
     private void base() {

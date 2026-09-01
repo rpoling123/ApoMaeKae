@@ -1,0 +1,149 @@
+package com.apomaekae.dragon;
+
+import android.Manifest;
+import android.app.Activity;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
+import android.graphics.Color;
+import android.os.Build;
+import android.os.Bundle;
+import android.os.Handler;
+import android.text.InputType;
+import android.view.Gravity;
+import android.widget.*;
+import com.apomaekae.license.LicenseClient;
+import java.text.SimpleDateFormat;
+import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+public class MainActivity extends Activity {
+    // APO MAEKAE V9.2.3 REALTIME GPS
+    private LocationManager realtimeLocationManager;
+    private LocationListener realtimeLocationListener;
+    private Location realtimeLocation;
+
+
+
+
+    // ==================================================
+    // APO MAEKAE V9.2.3 REALTIME GPS
+    // ==================================================
+
+    private void startRealtimeGPS(){
+        try{
+            realtimeLocationManager=
+                    (LocationManager)getSystemService(LOCATION_SERVICE);
+
+            realtimeLocationListener=new LocationListener(){
+
+                @Override
+                public void onLocationChanged(Location location){
+                    if(location==null)return;
+
+                    realtimeLocation=location;
+
+                    runOnUiThread(()->{
+                        try{
+                            if(gpsText!=null){
+                                gpsText.setText(
+                                    String.format(
+                                        Locale.US,
+                                        "📍 GPS ปัจจุบัน: %.6f, %.6f\nความแม่นยำ %.0f เมตร • REALTIME",
+                                        location.getLatitude(),
+                                        location.getLongitude(),
+                                        location.hasAccuracy()
+                                            ? location.getAccuracy()
+                                            : 0
+                                    )
+                                );
+                            }
+                        }catch(Exception ignored){}
+                    });
+                }
+
+                @Override public void onProviderEnabled(String provider){}
+                @Override public void onProviderDisabled(String provider){}
+            };
+
+            if(Build.VERSION.SDK_INT>=23 &&
+               checkSelfPermission(
+                   Manifest.permission.ACCESS_FINE_LOCATION)
+                   !=PackageManager.PERMISSION_GRANTED){
+                return;
+            }
+
+            realtimeLocationManager.requestLocationUpdates(
+                    LocationManager.GPS_PROVIDER,
+                    2000L,
+                    3.0f,
+                    realtimeLocationListener
+            );
+
+            Location last=
+                realtimeLocationManager.getLastKnownLocation(
+                    LocationManager.GPS_PROVIDER);
+
+            if(last==null){
+                last=
+                    realtimeLocationManager.getLastKnownLocation(
+                        LocationManager.NETWORK_PROVIDER);
+            }
+
+            if(last!=null){
+                realtimeLocation=last;
+            }
+
+        }catch(Exception e){
+            try{
+                if(gpsText!=null)
+                    gpsText.setText("📍 GPS: รอสิทธิ์ตำแหน่ง");
+            }catch(Exception ignored){}
+        }
+    }
+
+    private void stopRealtimeGPS(){
+        try{
+            if(realtimeLocationManager!=null &&
+               realtimeLocationListener!=null){
+                realtimeLocationManager.removeUpdates(
+                    realtimeLocationListener
+                );
+            }
+        }catch(Exception ignored){}
+    }
+
+    private void requestPermissionsIfNeeded(){
+        if(Build.VERSION.SDK_INT>=23 && checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)!=PackageManager.PERMISSION_GRANTED)
+            requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION,Manifest.permission.ACCESS_COARSE_LOCATION},10);
+        if(Build.VERSION.SDK_INT>=33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED)
+            requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},11);
+    }
+
+    private void updateRemaining(String exp){
+        if(remainText==null||exp==null||exp.isEmpty())return;
+        try{
+            Date d=parseDate(exp);long ms=d.getTime()-System.currentTimeMillis();
+            if(ms<=0){remainText.setText("เหลือ: หมดอายุ");return;}
+            long s=ms/1000,days=s/86400;s%=86400;long h=s/3600;s%=3600;long m=s/60;s%=60;
+            remainText.setText(String.format(Locale.getDefault(),"เหลือ: %d วัน %02d:%02d:%02d",days,h,m,s));
+        }catch(Exception e){remainText.setText("เหลือ: "+exp);}
+    }
+
+    private String formatDate(String s){try{return new SimpleDateFormat("dd/MM/yyyy HH:mm:ss",Locale.getDefault()).format(parseDate(s));}catch(Exception e){return s;}}
+    private Date parseDate(String s)throws Exception{String x=s;if(x.endsWith("Z"))x=x.substring(0,x.length()-1);x=x.replace("T"," ");if(x.contains("."))x=x.substring(0,x.indexOf('.'));if(x.length()>19)x=x.substring(0,19);return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss",Locale.US).parse(x);}
+    private void openUrl(String u){try{startActivity(new Intent(Intent.ACTION_VIEW,android.net.Uri.parse(u)));}catch(Exception e){Toast.makeText(this,"เปิดไม่ได้",Toast.LENGTH_SHORT).show();}}
+    private void openMaps(){openUrl("https://maps.google.com/?q=13.736351,100.571805");}
+
+    @Override
+    protected void onDestroy(){
+        stopRealtimeGPS();
+        executor.shutdownNow();
+        super.onDestroy();
+    }
+}
