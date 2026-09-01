@@ -2,10 +2,9 @@ package com.apomaekae.license;
 
 import android.content.Context;
 import android.graphics.Color;
-import android.graphics.drawable.GradientDrawable;
+import android.graphics.Typeface;
 import android.view.Gravity;
 import android.view.ViewGroup;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import java.text.SimpleDateFormat;
@@ -14,173 +13,88 @@ import java.util.Locale;
 
 public final class KeyStatusView {
 
-    private static final String TAG =
-            "APO_KEY_STATUS_VIEW";
+    private static final String TAG = "APO_KEY_STATUS";
 
     private KeyStatusView() {}
 
-    public static void attach(Context context) {
-
-        if (!(context instanceof android.app.Activity)) {
-            return;
-        }
-
-        android.app.Activity activity =
-                (android.app.Activity) context;
-
-        ViewGroup root =
-                activity.findViewById(
-                        android.R.id.content
-                );
+    public static void attach(Context context, ViewGroup root) {
 
         if (root == null) {
             return;
         }
 
-        TextView old =
-                root.findViewWithTag(TAG);
+        TextView old = root.findViewWithTag(TAG);
 
         if (old != null) {
             update(context, old);
             return;
         }
 
-        TextView view =
-                new TextView(context);
+        TextView view = new TextView(context);
 
         view.setTag(TAG);
-
         view.setTextSize(11);
+        view.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         view.setTextColor(Color.WHITE);
-        view.setGravity(Gravity.CENTER);
-        view.setPadding(
-                12,
-                5,
-                12,
-                5
-        );
+        view.setGravity(Gravity.CENTER_VERTICAL);
+        view.setPadding(18, 4, 18, 4);
+        view.setBackgroundColor(Color.argb(210, 0, 100, 70));
 
-        GradientDrawable bg =
-                new GradientDrawable();
-
-        bg.setColor(
-                Color.argb(
-                        220,
-                        20,
-                        20,
-                        20
-                )
-        );
-
-        bg.setCornerRadius(30);
-
-        view.setBackground(bg);
-
-        ViewGroup.LayoutParams params =
+        ViewGroup.LayoutParams lp =
                 new ViewGroup.LayoutParams(
-                        ViewGroup.LayoutParams.WRAP_CONTENT,
+                        ViewGroup.LayoutParams.MATCH_PARENT,
                         ViewGroup.LayoutParams.WRAP_CONTENT
                 );
 
-        if (root instanceof android.widget.FrameLayout) {
-
-            android.widget.FrameLayout.LayoutParams fp =
-                    new android.widget.FrameLayout.LayoutParams(
-                            ViewGroup.LayoutParams.WRAP_CONTENT,
-                            ViewGroup.LayoutParams.WRAP_CONTENT
-                    );
-
-            fp.gravity =
-                    Gravity.TOP |
-                    Gravity.CENTER_HORIZONTAL;
-
-            fp.topMargin = 8;
-
-            ((android.widget.FrameLayout)
-                    root).addView(
-                            view,
-                            fp
-                    );
-
-        } else {
-
-            root.addView(
-                    view,
-                    params
-            );
-        }
+        root.addView(view, lp);
 
         update(context, view);
     }
 
-    public static void update(
-            Context context,
-            TextView view
-    ) {
+    public static void update(Context context, TextView view) {
 
-        String key =
-                LicenseClient.getKey(context);
-
-        String status =
-                context
-                        .getSharedPreferences(
-                                "license",
-                                Context.MODE_PRIVATE
-                        )
-                        .getString(
-                                "status",
-                                "inactive"
-                        );
-
-        String expires =
-                LicenseClient.getExpires(
-                        context
-                );
+        String key = LicenseClient.getKey(context);
+        String expires = LicenseClient.getExpires(context);
+        String status = context
+                .getSharedPreferences(
+                        "license",
+                        Context.MODE_PRIVATE
+                )
+                .getString("status", "inactive");
 
         String keyVersion =
-                LicenseClient.getKeyVersion(
-                        context
-                );
+                LicenseClient.getKeyVersion(context);
 
-        String latestVersion =
-                LicenseClient.getLatestVersion(
-                        context
-                );
+        if (key == null || key.trim().isEmpty()) {
 
-        String expireText =
-                formatDate(expires);
+            view.setText(
+                    "🔑 KEY: ยังไม่ได้ลงทะเบียน"
+            );
 
-        String text;
+            return;
+        }
 
-        if ("active".equalsIgnoreCase(status)
-                && !key.isEmpty()) {
+        String expiryText =
+                formatExpiry(expires);
 
-            text =
-                    "🔑 KEY: ใช้งานได้"
-                    + " • หมดอายุ: "
-                    + expireText
-                    + " • V"
-                    + (
-                        keyVersion.isEmpty()
-                                ? latestVersion
-                                : keyVersion
-                    );
+        String text =
+                "🔑 KEY: " +
+                status.toUpperCase(Locale.US) +
+                "  •  หมดอายุ: " +
+                expiryText;
 
-        } else {
+        if (keyVersion != null &&
+                !keyVersion.isEmpty()) {
 
-            text =
-                    "🔑 KEY: "
-                    + status
-                    + " • หมดอายุ: "
-                    + expireText;
+            text +=
+                    "  •  Version: " +
+                    keyVersion;
         }
 
         view.setText(text);
     }
 
-    private static String formatDate(
-            String value
-    ) {
+    private static String formatExpiry(String value) {
 
         if (value == null ||
                 value.trim().isEmpty()) {
@@ -190,47 +104,65 @@ public final class KeyStatusView {
 
         try {
 
-            long millis;
+            long time;
 
-            if (value.matches("\\d+")) {
+            if (value.matches("[0-9]+")) {
 
-                millis =
-                        Long.parseLong(value);
+                time = Long.parseLong(value);
 
-                if (millis < 100000000000L) {
-                    millis *= 1000L;
+                if (time < 100000000000L) {
+                    time *= 1000L;
                 }
 
             } else {
 
-                String s =
-                        value.trim()
-                                .replace(
-                                        "T",
-                                        " "
-                                )
-                                .replace(
-                                        "Z",
-                                        ""
+                String s = value.trim();
+
+                String[] formats = {
+                        "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
+                        "yyyy-MM-dd'T'HH:mm:ss'Z'",
+                        "yyyy-MM-dd HH:mm:ss",
+                        "yyyy-MM-dd"
+                };
+
+                Date parsed = null;
+
+                for (String f : formats) {
+
+                    try {
+
+                        SimpleDateFormat sdf =
+                                new SimpleDateFormat(
+                                        f,
+                                        Locale.US
                                 );
 
-                SimpleDateFormat input =
-                        new SimpleDateFormat(
-                                "yyyy-MM-dd HH:mm:ss",
-                                Locale.US
-                        );
+                        sdf.setLenient(false);
 
-                millis =
-                        input.parse(s)
-                                .getTime();
+                        parsed = sdf.parse(s);
+
+                        if (parsed != null) {
+                            break;
+                        }
+
+                    } catch (Exception ignored) {
+                    }
+                }
+
+                if (parsed == null) {
+                    return value;
+                }
+
+                time = parsed.getTime();
             }
 
-            return new SimpleDateFormat(
-                    "dd/MM/yyyy HH:mm",
-                    Locale.US
-            ).format(
-                    new Date(millis)
-            );
+            SimpleDateFormat out =
+                    new SimpleDateFormat(
+                            "dd/MM/yyyy HH:mm:ss",
+                            Locale.getDefault()
+                    );
+
+            return out.format(new Date(time));
 
         } catch (Exception e) {
 
