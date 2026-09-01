@@ -1,135 +1,108 @@
 #!/data/data/com.termux/files/usr/bin/bash
-
 set -e
 
-PROJECT="$HOME/ApoMaeKae"
-JAVA="$PROJECT/app/src/main/java"
+APP="$HOME/ApoMaeKae"
 LATEST_VERSION="9.1.0"
 
-echo "=========================================="
-echo " APO MAE KAE - KEY COUNTDOWN + VERSION LOCK"
-echo "=========================================="
-echo "Latest App Version : $LATEST_VERSION"
-echo
+echo "========================================"
+echo " APO MAE KAE - KEY VERSION LOCK UPDATE"
+echo "========================================"
 
-MAIN=$(find "$JAVA" -type f -name "MainActivity.java" | head -n 1)
-LICENSE=$(find "$JAVA" -type f -name "LicenseClient.java" | head -n 1)
+cd "$APP"
+
+# หาไฟล์
+MAIN=$(find app/src/main/java -type f -name "MainActivity.java" | head -n 1)
+LICENSE=$(find app/src/main/java -type f -name "LicenseClient.java" | head -n 1)
 
 if [ -z "$MAIN" ]; then
     echo "❌ ไม่พบ MainActivity.java"
-    find "$JAVA" -type f -name "*.java" | head -50
     exit 1
 fi
 
 if [ -z "$LICENSE" ]; then
     echo "❌ ไม่พบ LicenseClient.java"
-    find "$JAVA" -type f -name "*.java" | head -50
     exit 1
 fi
 
-echo "MainActivity : $MAIN"
-echo "LicenseClient : $LICENSE"
+echo "MainActivity = $MAIN"
+echo "LicenseClient = $LICENSE"
+
+# ==============================
+# BACKUP
+# ==============================
+BACKUP=".backup_key_$(date +%Y%m%d_%H%M%S)"
+mkdir -p "$BACKUP"
+
+cp "$MAIN" "$BACKUP/MainActivity.java"
+cp "$LICENSE" "$BACKUP/LicenseClient.java"
+
+echo "✅ Backup: $BACKUP"
+
+# ==============================
+# ตรวจสอบ version
+# ==============================
 echo
+echo "📱 Latest Version = $LATEST_VERSION"
 
-mkdir -p "$JAVA/com/apomaekae/license"
+# ==============================
+# BUILD
+# ==============================
+chmod +x ./gradlew
 
-cat > "$JAVA/com/apomaekae/license/KeyInfo.java" <<'EOF'
-package com.apomaekae.license;
+./gradlew clean
+./gradlew assembleDebug --no-daemon
 
-public class KeyInfo {
+APK=$(find app/build/outputs/apk -type f -name "*.apk" | head -n 1)
 
-    public final boolean valid;
-    public final boolean versionValid;
-    public final String key;
-    public final String expires;
-    public final String message;
+if [ -z "$APK" ]; then
+    echo "❌ Build APK ไม่สำเร็จ"
+    exit 1
+fi
 
-    public KeyInfo(
-            boolean valid,
-            boolean versionValid,
-            String key,
-            String expires,
-            String message
-    ) {
-        this.valid = valid;
-        this.versionValid = versionValid;
-        this.key = key;
-        this.expires = expires;
-        this.message = message;
-    }
-}
-EOF
+# ==============================
+# COPY APK
+# ==============================
+mkdir -p "$HOME/storage/downloads"
 
-cat > "$JAVA/com/apomaekae/license/KeyCountdown.java" <<'EOF'
-package com.apomaekae.license;
+OUT="$HOME/storage/downloads/APO_MAE_KAE-${LATEST_VERSION}-UPDATED.apk"
 
-import android.os.CountDownTimer;
-import android.widget.TextView;
-
-public class KeyCountdown {
-
-    private CountDownTimer timer;
-
-    public void start(
-            TextView view,
-            long expiresMillis
-    ) {
-
-        if (timer != null) {
-            timer.cancel();
-        }
-
-        long remain = expiresMillis - System.currentTimeMillis();
-
-        if (remain <= 0) {
-            view.setText("🔑 KEY หมดอายุแล้ว");
-            return;
-        }
-
-        timer = new CountDownTimer(remain, 1000) {
-
-            @Override
-            public void onTick(long millisUntilFinished) {
-
-                long totalSeconds = millisUntilFinished / 1000;
-
-                long days = totalSeconds / 86400;
-                long hours = (totalSeconds % 86400) / 3600;
-                long minutes = (totalSeconds % 3600) / 60;
-                long seconds = totalSeconds % 60;
-
-                view.setText(
-                        "🔑 KEY หมดอายุใน " +
-                        days + " วัน " +
-                        hours + " ชม. " +
-                        minutes + " นาที " +
-                        seconds + " วินาที"
-                );
-            }
-
-            @Override
-            public void onFinish() {
-                view.setText("🔑 KEY หมดอายุแล้ว");
-            }
-
-        }.start();
-    }
-
-    public void stop() {
-        if (timer != null) {
-            timer.cancel();
-            timer = null;
-        }
-    }
-}
-EOF
+cp "$APK" "$OUT"
 
 echo
-echo "=========================================="
-echo "✅ เตรียมระบบ KEY สำเร็จ"
-echo "=========================================="
-echo "เวอร์ชันล่าสุด : $LATEST_VERSION"
-echo "MainActivity   : $MAIN"
-echo "LicenseClient  : $LICENSE"
+echo "========================================"
+echo "✅ BUILD สำเร็จ"
+echo "========================================"
+echo "📱 VERSION : $LATEST_VERSION"
+echo "📦 APK     : $OUT"
+echo "💾 BACKUP  : $BACKUP"
+echo "========================================"
+
+ls -lh "$OUT"
+
+# ==============================
+# GIT UPDATE
+# ==============================
 echo
-echo "ขั้นต่อไปให้ Build APK"
+echo "===== GIT UPDATE ====="
+
+if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+
+    git add .
+
+    git commit -m "Update KEY version lock $LATEST_VERSION" || true
+
+    if git remote get-url origin >/dev/null 2>&1; then
+        git push origin HEAD
+        echo "✅ Git push สำเร็จ"
+    else
+        echo "⚠️ ยังไม่มี Git remote origin"
+    fi
+
+else
+    echo "⚠️ โฟลเดอร์นี้ยังไม่ใช่ Git repository"
+fi
+
+echo
+echo "========================================"
+echo "🎉 UPDATE เสร็จแล้ว"
+echo "========================================"
