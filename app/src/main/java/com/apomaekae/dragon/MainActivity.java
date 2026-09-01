@@ -115,7 +115,7 @@ public class MainActivity extends Activity {
         base();
         addTitle("🏠 APO MAEKAE V9.1 • ZONE GUARD",25,Gravity.CENTER);
         addText("KEY: ตรวจสอบกับระบบ ADMIN ทุก 5 นาที",17,Gravity.LEFT);
-        addText("โซน: 13 มังกร • Buffer 500 เมตร • เสียงแจ้งเตือนภาษาไทย",17,Gravity.LEFT);
+        addText("โซน: 13 มังกร • Buffer 100 เมตร • เสียงแจ้งเตือนภาษาไทย",17,Gravity.LEFT);
 
         Button rider=button("🏍️ เปิดแอป LINE MAN RIDER");
         Button dragon=button("🌧️🐉 มังกร + อินสาย");
@@ -199,7 +199,7 @@ public class MainActivity extends Activity {
     private void startGuard() {
         Intent i=new Intent(this,ZoneService.class);
         if(Build.VERSION.SDK_INT>=26) startForegroundService(i); else startService(i);
-        if(gpsText!=null) gpsText.setText("🟢 กำลังตรวจ GPS • Buffer 500 เมตร • ทำงานเบื้องหลัง");
+        if(gpsText!=null) gpsText.setText("🟢 กำลังตรวจ GPS • Buffer 100 เมตร • ทำงานเบื้องหลัง");
         notifyAlert("ZONE GUARD","เริ่มตรวจโซนแล้ว");
     }
 

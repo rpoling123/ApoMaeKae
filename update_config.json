@@ -1,6 +1,6 @@
 {
   "enabled": true,
-  "buffer_meters": 500,
+  "buffer_meters": 100,
   "voice_enabled": true,
   "job_stats_enabled": true,
   "line_mode_pause_minutes": 10,
