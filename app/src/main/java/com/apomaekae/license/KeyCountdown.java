@@ -19,7 +19,7 @@ public class KeyCountdown {
         long remain = expiresMillis - System.currentTimeMillis();
 
         if (remain <= 0) {
-            view.setText("🔑 KEY หมดอายุแล้ว");
+            view.setText("🔴 KEY หมดอายุแล้ว");
             return;
         }
 
@@ -36,7 +36,7 @@ public class KeyCountdown {
                 long seconds = totalSeconds % 60;
 
                 view.setText(
-                        "🔑 KEY หมดอายุใน " +
+                        "⏳ KEY หมดอายุใน " +
                         days + " วัน " +
                         hours + " ชม. " +
                         minutes + " นาที " +
@@ -46,7 +46,7 @@ public class KeyCountdown {
 
             @Override
             public void onFinish() {
-                view.setText("🔑 KEY หมดอายุแล้ว");
+                view.setText("🔴 KEY หมดอายุแล้ว");
             }
 
         }.start();
