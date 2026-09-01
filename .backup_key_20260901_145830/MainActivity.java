@@ -41,20 +41,7 @@ private LinearLayout root;
         ThaiVoice.init(this);
         requestPermissionsIfNeeded();
         showLicensePage();
-        startLicenseCountdown();
         UpdateManager.check(this);
-    }
-
-    private void startLicenseCountdown() {
-        handler.post(new Runnable() {
-            @Override public void run() {
-                try {
-                    String exp = LicenseClient.getExpires(MainActivity.this);
-                    updateRemaining(exp);
-                } catch (Exception ignored) {}
-                handler.postDelayed(this, 1000);
-            }
-        });
     }
 
     private void base() {

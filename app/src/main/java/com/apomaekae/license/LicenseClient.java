@@ -20,15 +20,19 @@ public final class LicenseClient {
     private LicenseClient() {}
 
     public static String getKey(Context context) {
-        return context.getSharedPreferences("license", Context.MODE_PRIVATE)
-                .getString("key", "");
+        return context.getSharedPreferences(
+                "license",
+                Context.MODE_PRIVATE
+        ).getString("key", "");
     }
 
     public static void saveKey(Context context, String key) {
-        context.getSharedPreferences("license", Context.MODE_PRIVATE)
-                .edit()
-                .putString("key", key == null ? "" : key.trim())
-                .apply();
+        context.getSharedPreferences(
+                "license",
+                Context.MODE_PRIVATE
+        ).edit()
+        .putString("key", key == null ? "" : key.trim())
+        .apply();
     }
 
     public static String getDeviceId(Context context) {
@@ -49,63 +53,116 @@ public final class LicenseClient {
         }
     }
 
+    public static String getAppVersion(Context context) {
+        try {
+            android.content.pm.PackageInfo info =
+                    context.getPackageManager()
+                            .getPackageInfo(
+                                    context.getPackageName(),
+                                    0
+                            );
+
+            if (info.versionName != null) {
+                return info.versionName;
+            }
+
+        } catch (Exception ignored) {
+        }
+
+        return "";
+    }
+
     public static Result verify(Context context, String key) {
 
         if (key == null || key.trim().isEmpty()) {
-            return new Result(false, "กรุณาใส่ KEY", "", "inactive");
+            return new Result(
+                    false,
+                    "กรุณาใส่ KEY",
+                    "",
+                    "inactive"
+            );
         }
 
         HttpURLConnection connection = null;
 
         try {
+
+            String appVersion = getAppVersion(context);
+
             URL url = new URL(API);
-            connection = (HttpURLConnection) url.openConnection();
+
+            connection =
+                    (HttpURLConnection) url.openConnection();
 
             connection.setRequestMethod("POST");
             connection.setConnectTimeout(30000);
             connection.setReadTimeout(30000);
             connection.setDoOutput(true);
             connection.setInstanceFollowRedirects(true);
-            connection.setRequestProperty("User-Agent", "APO-MAEKAE-V9.1");
+
+            connection.setRequestProperty(
+                    "User-Agent",
+                    "APO-MAEKAE-" + appVersion
+            );
+
             connection.setRequestProperty(
                     "Content-Type",
                     "application/json; charset=UTF-8"
             );
 
             JSONObject body = new JSONObject();
+
             body.put("key", key.trim());
-            body.put("deviceId", getDeviceId(context));
-            body.put("appVersion", getAppVersion(context));
+            body.put(
+                    "deviceId",
+                    getDeviceId(context)
+            );
+            body.put(
+                    "appVersion",
+                    appVersion
+            );
 
-            byte[] data = body.toString()
-                    .getBytes(StandardCharsets.UTF_8);
+            byte[] data =
+                    body.toString()
+                            .getBytes(StandardCharsets.UTF_8);
 
-            OutputStream os = connection.getOutputStream();
+            OutputStream os =
+                    connection.getOutputStream();
+
             os.write(data);
             os.flush();
             os.close();
 
-            int responseCode = connection.getResponseCode();
+            int responseCode =
+                    connection.getResponseCode();
 
             BufferedReader reader;
 
-            if (responseCode >= 200 && responseCode < 400) {
-                reader = new BufferedReader(
-                        new InputStreamReader(
-                                connection.getInputStream(),
-                                StandardCharsets.UTF_8
-                        )
-                );
+            if (responseCode >= 200 &&
+                    responseCode < 400) {
+
+                reader =
+                        new BufferedReader(
+                                new InputStreamReader(
+                                        connection.getInputStream(),
+                                        StandardCharsets.UTF_8
+                                )
+                        );
+
             } else {
-                reader = new BufferedReader(
-                        new InputStreamReader(
-                                connection.getErrorStream(),
-                                StandardCharsets.UTF_8
-                        )
-                );
+
+                reader =
+                        new BufferedReader(
+                                new InputStreamReader(
+                                        connection.getErrorStream(),
+                                        StandardCharsets.UTF_8
+                                )
+                        );
             }
 
-            StringBuilder response = new StringBuilder();
+            StringBuilder response =
+                    new StringBuilder();
+
             String line;
 
             while ((line = reader.readLine()) != null) {
@@ -114,60 +171,157 @@ public final class LicenseClient {
 
             reader.close();
 
-            JSONObject json = new JSONObject(response.toString());
+            JSONObject json =
+                    new JSONObject(
+                            response.toString()
+                    );
 
-            boolean active = json.optBoolean("active", false) || "active".equalsIgnoreCase(json.optString("status", ""));
+            boolean active =
+                    json.optBoolean(
+                            "active",
+                            false
+                    ) ||
+                    "active".equalsIgnoreCase(
+                            json.optString(
+                                    "status",
+                                    ""
+                            )
+                    );
 
-            String message = json.optString(
-                    "message",
-                    active ? "OK" : "KEY ไม่ผ่าน"
-            );
+            String message =
+                    json.optString(
+                            "message",
+                            active
+                                    ? "OK"
+                                    : "KEY ไม่ผ่าน"
+                    );
 
-            String expires = json.optString(
-                    "expiresAt",
-                    json.optString("expireAt", "")
-            );
+            String expires =
+                    json.optString(
+                            "expiresAt",
+                            json.optString(
+                                    "expireAt",
+                                    ""
+                            )
+                    );
 
-            String status = json.optString(
-                    "status",
-                    active ? "active" : "inactive"
-            );
+            String status =
+                    json.optString(
+                            "status",
+                            active
+                                    ? "active"
+                                    : "inactive"
+                    );
 
-            String returnedKey = json.optString(
-                    "key",
-                    key.trim()
-            );
+            String returnedKey =
+                    json.optString(
+                            "key",
+                            key.trim()
+                    );
+
+            /*
+             * VERSION LOCK
+             *
+             * KEY ต้องตรงกับ Version ล่าสุด
+             */
+
+            String keyVersion =
+                    json.optString(
+                            "keyVersion",
+                            ""
+                    );
+
+            String latestVersion =
+                    json.optString(
+                            "latestVersion",
+                            ""
+                    );
+
+            /*
+             * ถ้า server ส่ง latestVersion มา
+             * ต้องใช้ version ล่าสุดเท่านั้น
+             */
+
+            if (active &&
+                    !latestVersion.isEmpty() &&
+                    !appVersion.equals(
+                            latestVersion
+                    )) {
+
+                return new Result(
+                        false,
+                        "KEY ใช้ได้เฉพาะ Version ล่าสุด " +
+                                latestVersion +
+                                " กรุณาอัปเดตแอป",
+                        expires,
+                        "version_locked"
+                );
+            }
+
+            /*
+             * KEY VERSION ต้องตรงกับ APP VERSION
+             */
+
+            if (active &&
+                    !keyVersion.isEmpty() &&
+                    !appVersion.equals(
+                            keyVersion
+                    )) {
+
+                return new Result(
+                        false,
+                        "KEY นี้เป็นของ Version " +
+                                keyVersion +
+                                " ไม่ใช่ Version " +
+                                appVersion,
+                        expires,
+                        "version_locked"
+                );
+            }
 
             if (active) {
-                context.getSharedPreferences("license", Context.MODE_PRIVATE)
-                        .edit()
-                        .putString("key", returnedKey.trim().toUpperCase())
-                        .putString("expires", expires)
-                        .putString("status", status)
-                        .putString("keyVersion",
-                                json.optString(
-                                        "keyVersion",
-                                        json.optString(
-                                                "appVersion",
-                                                getAppVersion(context)
-                                        )
-                                )
-                        )
-                        .putString(
-                                "latestVersion",
-                                json.optString(
-                                        "latestVersion",
-                                        getAppVersion(context)
-                                )
-                        )
-                        .putLong(
+
+                context.getSharedPreferences(
+                        "license",
+                        Context.MODE_PRIVATE
+                ).edit()
+
+                .putString(
+                        "key",
+                        returnedKey
+                                .trim()
+                                .toUpperCase()
+                )
+
+                .putString(
+                        "expires",
+                        expires
+                )
+
+                .putString(
+                        "status",
+                        status
+                )
+
+                .putString(
+                        "keyVersion",
+                        keyVersion
+                )
+
+                .putString(
+                        "latestVersion",
+                        latestVersion
+                )
+
+                .putLong(
+                        "serverTime",
+                        json.optLong(
                                 "serverTime",
-                                json.optLong(
-                                        "serverTime",
-                                        System.currentTimeMillis()
-                                )
+                                System.currentTimeMillis()
                         )
-                        .apply();
+                )
+
+                .apply();
 
                 return new Result(
                         true,
@@ -202,19 +356,38 @@ public final class LicenseClient {
     }
 
     public static String getExpires(Context context) {
-        return context.getSharedPreferences("license", Context.MODE_PRIVATE)
-                .getString("expires", "");
+
+        return context
+                .getSharedPreferences(
+                        "license",
+                        Context.MODE_PRIVATE
+                )
+                .getString(
+                        "expires",
+                        ""
+                );
     }
 
     public static String getKeyVersion(Context context) {
+
         return context
-                .getSharedPreferences("license", Context.MODE_PRIVATE)
-                .getString("keyVersion", "");
+                .getSharedPreferences(
+                        "license",
+                        Context.MODE_PRIVATE
+                )
+                .getString(
+                        "keyVersion",
+                        ""
+                );
     }
 
     public static String getLatestVersion(Context context) {
+
         return context
-                .getSharedPreferences("license", Context.MODE_PRIVATE)
+                .getSharedPreferences(
+                        "license",
+                        Context.MODE_PRIVATE
+                )
                 .getString(
                         "latestVersion",
                         getAppVersion(context)
@@ -222,33 +395,16 @@ public final class LicenseClient {
     }
 
     public static long getServerTime(Context context) {
+
         return context
-                .getSharedPreferences("license", Context.MODE_PRIVATE)
+                .getSharedPreferences(
+                        "license",
+                        Context.MODE_PRIVATE
+                )
                 .getLong(
                         "serverTime",
                         System.currentTimeMillis()
                 );
-    }
-
-    private static String getAppVersion(Context context) {
-        try {
-            android.content.pm.PackageManager pm =
-                    context.getPackageManager();
-
-            android.content.pm.PackageInfo info =
-                    pm.getPackageInfo(
-                            context.getPackageName(),
-                            0
-                    );
-
-            if (info.versionName != null) {
-                return info.versionName;
-            }
-
-        } catch (Exception ignored) {
-        }
-
-        return "";
     }
 
     public static final class Result {
