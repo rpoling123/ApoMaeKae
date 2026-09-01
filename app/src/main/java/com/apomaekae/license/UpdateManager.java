@@ -29,83 +29,64 @@ public final class UpdateManager {
 
                 ReleaseInfo latest = getLatestRelease();
 
-                if (latest == null) {
+                if (latest == null || currentVersion.isEmpty()) {
                     return;
                 }
 
                 /*
-                 * สำคัญ:
-                 * Version ล่าสุดต้องมาจาก GitHub Release เท่านั้น
-                 * ห้ามสร้าง Version เอง
+                 * VERSION ต้องมาจาก GitHub Release เท่านั้น
+                 * ห้ามกำหนด Version เองในโค้ด
                  */
-                if (compareVersion(
-                        currentVersion,
-                        latest.version
-                ) >= 0) {
 
-                    // เป็นเวอร์ชันล่าสุดแล้ว
+                if (compareVersion(currentVersion, latest.version) >= 0) {
+                    // เป็น Version ล่าสุดแล้ว → ไม่แสดงอะไร
                     return;
                 }
 
-                /*
-                 * แสดงดาวน์โหลดเฉพาะเมื่อ GitHub มี Version ใหม่จริง
-                 * และมี APK asset จริง
-                 */
                 if (latest.apkUrl.isEmpty()) {
                     return;
                 }
 
-                activity.runOnUiThread(() -> {
+                activity.runOnUiThread(() ->
+                        new AlertDialog.Builder(activity)
+                                .setTitle("📦 มีเวอร์ชันใหม่")
+                                .setMessage(
+                                        "เวอร์ชันปัจจุบัน : "
+                                                + currentVersion
+                                                + "\n\n"
+                                                + "เวอร์ชันล่าสุด : "
+                                                + latest.version
+                                                + "\n\n"
+                                                + "พบ APK จาก GitHub Release"
+                                )
+                                .setCancelable(false)
+                                .setNegativeButton("ภายหลัง", null)
+                                .setPositiveButton(
+                                        "ดาวน์โหลด",
+                                        (dialog, which) -> {
+                                            try {
+                                                Intent intent =
+                                                        new Intent(
+                                                                Intent.ACTION_VIEW,
+                                                                Uri.parse(latest.apkUrl)
+                                                        );
 
-                    new AlertDialog.Builder(activity)
-                            .setTitle("📦 มีเวอร์ชันใหม่")
-                            .setMessage(
-                                    "เวอร์ชันปัจจุบัน : "
-                                            + currentVersion
-                                            + "\n\n"
-                                            + "เวอร์ชันล่าสุด : "
-                                            + latest.version
-                                            + "\n\n"
-                                            + "พบ APK จาก GitHub Release"
-                            )
-                            .setCancelable(false)
-                            .setNegativeButton(
-                                    "ภายหลัง",
-                                    null
-                            )
-                            .setPositiveButton(
-                                    "ดาวน์โหลด",
-                                    (dialog, which) -> {
+                                                activity.startActivity(intent);
 
-                                        try {
-
-                                            Intent intent =
-                                                    new Intent(
-                                                            Intent.ACTION_VIEW,
-                                                            Uri.parse(
-                                                                    latest.apkUrl
-                                                            )
-                                                    );
-
-                                            activity.startActivity(
-                                                    intent
-                                            );
-
-                                        } catch (Exception e) {
-
-                                            Toast.makeText(
-                                                    activity,
-                                                    "เปิดดาวน์โหลดไม่สำเร็จ",
-                                                    Toast.LENGTH_LONG
-                                            ).show();
+                                            } catch (Exception e) {
+                                                Toast.makeText(
+                                                        activity,
+                                                        "เปิดดาวน์โหลดไม่สำเร็จ",
+                                                        Toast.LENGTH_LONG
+                                                ).show();
+                                            }
                                         }
-                                    }
-                            )
-                            .show();
-                });
+                                )
+                                .show()
+                );
 
             } catch (Exception ignored) {
-                // ระบบ Update ห้ามทำให้แอปหลักล้ม
+                // Update ล้มเหลว ห้ามทำให้แอปหลักล้ม
             }
         }).start();
     }
@@ -115,7 +96,6 @@ public final class UpdateManager {
         HttpURLConnection connection = null;
 
         try {
-
             URL url = new URL(GITHUB_API);
 
             connection =
@@ -162,9 +142,10 @@ public final class UpdateManager {
                     new JSONObject(json.toString());
 
             /*
-             * ใช้ Version จาก GitHub Release จริง
-             * เช่น v9.2.0
+             * อ่าน Version จาก tag_name ของ GitHub Release
+             * เช่น v9.2.0 → 9.2.0
              */
+
             String latestVersion =
                     cleanVersion(
                             release.optString(
@@ -186,9 +167,7 @@ public final class UpdateManager {
 
             String apkUrl = "";
 
-            for (int i = 0;
-                 i < assets.length();
-                 i++) {
+            for (int i = 0; i < assets.length(); i++) {
 
                 JSONObject asset =
                         assets.optJSONObject(i);
@@ -215,7 +194,6 @@ public final class UpdateManager {
                         &&
                         !downloadUrl.isEmpty()
                 ) {
-
                     apkUrl = downloadUrl;
                     break;
                 }
@@ -242,9 +220,7 @@ public final class UpdateManager {
         }
     }
 
-    private static String cleanVersion(
-            String version
-    ) {
+    private static String cleanVersion(String version) {
 
         if (version == null) {
             return "";
@@ -252,10 +228,7 @@ public final class UpdateManager {
 
         return version
                 .trim()
-                .replaceFirst(
-                        "^[vV]",
-                        ""
-                );
+                .replaceFirst("^[vV]", "");
     }
 
     private static int compareVersion(
@@ -279,9 +252,7 @@ public final class UpdateManager {
                             b.length
                     );
 
-            for (int i = 0;
-                 i < length;
-                 i++) {
+            for (int i = 0; i < length; i++) {
 
                 int x =
                         i < a.length
@@ -306,8 +277,10 @@ public final class UpdateManager {
 
         } catch (Exception ignored) {
 
-            // อ่าน Version ไม่ได้
-            // ไม่แสดง Update
+            /*
+             * ถ้าอ่าน Version ไม่ได้
+             * ให้ถือว่าไม่มี Update
+             */
             return 0;
         }
     }
@@ -321,7 +294,6 @@ public final class UpdateManager {
                 String version,
                 String apkUrl
         ) {
-
             this.version = version;
             this.apkUrl = apkUrl;
         }
