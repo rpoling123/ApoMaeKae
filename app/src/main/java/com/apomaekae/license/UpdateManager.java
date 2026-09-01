@@ -22,24 +22,41 @@ public final class UpdateManager {
     private UpdateManager() {}
 
     public static void check(Activity activity) {
+
         new Thread(() -> {
+
             try {
-                String currentVersion =
-                        cleanVersion(LicenseClient.getAppVersion(activity));
 
-                ReleaseInfo latest = getLatestRelease();
+                final String currentVersion =
+                        cleanVersion(
+                                LicenseClient.getAppVersion(activity)
+                        );
 
-                if (latest == null || currentVersion.isEmpty()) {
+                ReleaseInfo latest =
+                        getLatestRelease();
+
+                if (latest == null ||
+                        currentVersion.isEmpty()) {
                     return;
                 }
 
                 /*
-                 * VERSION ต้องมาจาก GitHub Release เท่านั้น
-                 * ห้ามกำหนด Version เองในโค้ด
+                 * ห้ามสร้าง Version เอง
+                 * Version ต้องมาจาก GitHub Release เท่านั้น
                  */
 
-                if (compareVersion(currentVersion, latest.version) >= 0) {
-                    // เป็น Version ล่าสุดแล้ว → ไม่แสดงอะไร
+                int result =
+                        compareVersion(
+                                currentVersion,
+                                latest.version
+                        );
+
+                /*
+                 * ถ้าเป็น Version ล่าสุดแล้ว
+                 * ไม่ต้องขึ้น Dialog ดาวน์โหลด
+                 */
+
+                if (result >= 0) {
                     return;
                 }
 
@@ -47,47 +64,64 @@ public final class UpdateManager {
                     return;
                 }
 
-                activity.runOnUiThread(() ->
-                        new AlertDialog.Builder(activity)
-                                .setTitle("📦 มีเวอร์ชันใหม่")
-                                .setMessage(
-                                        "เวอร์ชันปัจจุบัน : "
-                                                + currentVersion
-                                                + "\n\n"
-                                                + "เวอร์ชันล่าสุด : "
-                                                + latest.version
-                                                + "\n\n"
-                                                + "พบ APK จาก GitHub Release"
-                                )
-                                .setCancelable(false)
-                                .setNegativeButton("ภายหลัง", null)
-                                .setPositiveButton(
-                                        "ดาวน์โหลด",
-                                        (dialog, which) -> {
-                                            try {
-                                                Intent intent =
-                                                        new Intent(
-                                                                Intent.ACTION_VIEW,
-                                                                Uri.parse(latest.apkUrl)
-                                                        );
+                activity.runOnUiThread(() -> {
 
-                                                activity.startActivity(intent);
+                    new AlertDialog.Builder(activity)
 
-                                            } catch (Exception e) {
-                                                Toast.makeText(
-                                                        activity,
-                                                        "เปิดดาวน์โหลดไม่สำเร็จ",
-                                                        Toast.LENGTH_LONG
-                                                ).show();
-                                            }
+                            .setTitle("📦 มีเวอร์ชันใหม่")
+
+                            .setMessage(
+                                    "เวอร์ชันปัจจุบัน : "
+                                            + currentVersion
+                                            + "\n\n"
+                                            + "เวอร์ชันล่าสุด : "
+                                            + latest.version
+                                            + "\n\n"
+                                            + "พบ APK จาก GitHub Release"
+                            )
+
+                            .setCancelable(false)
+
+                            .setNegativeButton(
+                                    "ภายหลัง",
+                                    null
+                            )
+
+                            .setPositiveButton(
+                                    "ดาวน์โหลด",
+                                    (dialog, which) -> {
+
+                                        try {
+
+                                            Intent intent =
+                                                    new Intent(
+                                                            Intent.ACTION_VIEW,
+                                                            Uri.parse(
+                                                                    latest.apkUrl
+                                                            )
+                                                    );
+
+                                            activity.startActivity(
+                                                    intent
+                                            );
+
+                                        } catch (Exception e) {
+
+                                            Toast.makeText(
+                                                    activity,
+                                                    "เปิดดาวน์โหลดไม่สำเร็จ",
+                                                    Toast.LENGTH_LONG
+                                            ).show();
                                         }
-                                )
-                                .show()
-                );
+                                    }
+                            )
+
+                            .show();
+                });
 
             } catch (Exception ignored) {
-                // Update ล้มเหลว ห้ามทำให้แอปหลักล้ม
             }
+
         }).start();
     }
 
@@ -96,10 +130,13 @@ public final class UpdateManager {
         HttpURLConnection connection = null;
 
         try {
-            URL url = new URL(GITHUB_API);
+
+            URL url =
+                    new URL(GITHUB_API);
 
             connection =
-                    (HttpURLConnection) url.openConnection();
+                    (HttpURLConnection)
+                            url.openConnection();
 
             connection.setRequestMethod("GET");
             connection.setConnectTimeout(15000);
@@ -139,12 +176,9 @@ public final class UpdateManager {
             reader.close();
 
             JSONObject release =
-                    new JSONObject(json.toString());
-
-            /*
-             * อ่าน Version จาก tag_name ของ GitHub Release
-             * เช่น v9.2.0 → 9.2.0
-             */
+                    new JSONObject(
+                            json.toString()
+                    );
 
             String latestVersion =
                     cleanVersion(
@@ -159,7 +193,9 @@ public final class UpdateManager {
             }
 
             JSONArray assets =
-                    release.optJSONArray("assets");
+                    release.optJSONArray(
+                            "assets"
+                    );
 
             if (assets == null) {
                 return null;
@@ -167,7 +203,9 @@ public final class UpdateManager {
 
             String apkUrl = "";
 
-            for (int i = 0; i < assets.length(); i++) {
+            for (int i = 0;
+                 i < assets.length();
+                 i++) {
 
                 JSONObject asset =
                         assets.optJSONObject(i);
@@ -188,12 +226,12 @@ public final class UpdateManager {
                                 ""
                         );
 
-                if (
-                        name.toLowerCase()
-                                .endsWith(".apk")
+                if (name
+                        .toLowerCase()
+                        .endsWith(".apk")
                         &&
-                        !downloadUrl.isEmpty()
-                ) {
+                        !downloadUrl.isEmpty()) {
+
                     apkUrl = downloadUrl;
                     break;
                 }
@@ -220,7 +258,9 @@ public final class UpdateManager {
         }
     }
 
-    private static String cleanVersion(String version) {
+    private static String cleanVersion(
+            String version
+    ) {
 
         if (version == null) {
             return "";
@@ -228,7 +268,10 @@ public final class UpdateManager {
 
         return version
                 .trim()
-                .replaceFirst("^[vV]", "");
+                .replaceFirst(
+                        "^[vV]",
+                        ""
+                );
     }
 
     private static int compareVersion(
@@ -252,7 +295,9 @@ public final class UpdateManager {
                             b.length
                     );
 
-            for (int i = 0; i < length; i++) {
+            for (int i = 0;
+                 i < length;
+                 i++) {
 
                 int x =
                         i < a.length
@@ -277,10 +322,6 @@ public final class UpdateManager {
 
         } catch (Exception ignored) {
 
-            /*
-             * ถ้าอ่าน Version ไม่ได้
-             * ให้ถือว่าไม่มี Update
-             */
             return 0;
         }
     }
@@ -294,6 +335,7 @@ public final class UpdateManager {
                 String version,
                 String apkUrl
         ) {
+
             this.version = version;
             this.apkUrl = apkUrl;
         }

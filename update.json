@@ -1,8 +1,8 @@
 {
   "versionCode": 94,
-  "versionName": "9.2",
-  "minVersion": "9.2",
+  "versionName": "9.2.3",
+  "minVersion": "9.2.3",
   "forceUpdate": true,
   "apkUrl": "https://github.com/rpoling123/ApoMaeKae/releases/latest/download/ApoMaeKae.apk",
-  "note": "เพิ่มระบบอัปเดตผ่านแอป และปรับปรุงระบบ KEY / วันหมดอายุ"
+  "note": "KEY ใช้ได้เฉพาะเวอร์ชันล่าสุด + วันหมดอายุ + Countdown"
 }
