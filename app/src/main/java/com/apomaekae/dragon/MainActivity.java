@@ -37,6 +37,7 @@ public class MainActivity extends Activity {
     @Override public void onCreate(Bundle b) {
         super.onCreate(b);
         createNotificationChannel();
+        ThaiVoice.init(this);
         requestPermissionsIfNeeded();
         showLicensePage();
     }
@@ -215,6 +216,7 @@ public class MainActivity extends Activity {
     }
 
     private void notifyAlert(String title,String msg){
+        ThaiVoice.speak(this, title + ". " + msg);
         try{
             NotificationManager nm=(NotificationManager)getSystemService(NOTIFICATION_SERVICE);
             android.app.Notification.Builder b=Build.VERSION.SDK_INT>=26
