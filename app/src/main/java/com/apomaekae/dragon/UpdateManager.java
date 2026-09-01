@@ -1,129 +1,278 @@
 package com.apomaekae.dragon;
 
-import android.app.*;
-import android.content.*;
+import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.Intent;
+import android.content.pm.PackageInfo;
 import android.net.Uri;
-import android.os.*;
-import android.widget.*;
+import android.os.Build;
+import android.widget.Toast;
+
 import org.json.JSONObject;
-import java.io.*;
-import java.net.*;
 
-public class UpdateManager {
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
 
-    /*
-     * แก้ URL 2 จุดนี้เป็น URL ของระบบอัปเดตจริง
-     */
-    public static final String UPDATE_JSON =
-        "https://raw.githubusercontent.com/rpoling123/ApoMaeKae/main/update.json";
+public final class UpdateManager {
+
+    private static final String UPDATE_JSON =
+            "https://raw.githubusercontent.com/rpoling123/ApoMaeKae/main/update.json";
+
+    private UpdateManager() {}
 
     public static void check(Activity activity) {
+
         new Thread(() -> {
+
+            HttpURLConnection connection = null;
+
             try {
-                HttpURLConnection c =
-                    (HttpURLConnection)new URL(UPDATE_JSON).openConnection();
 
-                c.setConnectTimeout(8000);
-                c.setReadTimeout(8000);
-                c.setRequestMethod("GET");
+                connection =
+                        (HttpURLConnection)
+                                new URL(UPDATE_JSON).openConnection();
 
-                BufferedReader br = new BufferedReader(
-                    new InputStreamReader(c.getInputStream(), "UTF-8"));
+                connection.setConnectTimeout(8000);
+                connection.setReadTimeout(8000);
+                connection.setRequestMethod("GET");
+
+                BufferedReader br =
+                        new BufferedReader(
+                                new InputStreamReader(
+                                        connection.getInputStream(),
+                                        "UTF-8"
+                                )
+                        );
 
                 StringBuilder sb = new StringBuilder();
                 String line;
 
-                while ((line = br.readLine()) != null)
+                while ((line = br.readLine()) != null) {
                     sb.append(line);
-
-                br.close();
-                c.disconnect();
-
-                JSONObject j = new JSONObject(sb.toString());
-
-                int latestCode = j.optInt("versionCode", 93);
-                String latestName = j.optString("versionName", "9.1");
-                String apkUrl = j.optString("apkUrl", "");
-                String minVersion = j.optString("minVersion", "9.1");
-                boolean force = j.optBoolean("forceUpdate", false);
-                String note = j.optString("note", "มีเวอร์ชันใหม่");
-
-                int currentCode = 93;
-
-                if (latestCode > currentCode) {
-                    activity.runOnUiThread(() ->
-                        showUpdate(activity, latestName, apkUrl,
-                                   force, note)
-                    );
                 }
 
+                br.close();
+
+                JSONObject json =
+                        new JSONObject(sb.toString());
+
+                final int latestCode =
+                        json.optInt("versionCode", 0);
+
+                final String latestName =
+                        json.optString("versionName", "");
+
+                final String apkUrl =
+                        json.optString("apkUrl", "");
+
+                final boolean force =
+                        json.optBoolean("forceUpdate", false);
+
+                final String note =
+                        json.optString(
+                                "note",
+                                "มีเวอร์ชันใหม่"
+                        );
+
+                final int currentCode =
+                        getCurrentVersionCode(activity);
+
+                final String currentName =
+                        getCurrentVersionName(activity);
+
+                /*
+                 * สำคัญมาก
+                 *
+                 * ถ้าเวอร์ชันปัจจุบันเท่ากับ
+                 * หรือใหม่กว่าเวอร์ชันบน Server
+                 *
+                 * จะไม่แสดงหน้าดาวน์โหลด
+                 */
+                if (latestCode <= 0 ||
+                        latestCode <= currentCode) {
+
+                    return;
+                }
+
+                /*
+                 * ทำเป็น final ก่อนเข้า Lambda
+                 * ป้องกัน error:
+                 *
+                 * local variables referenced from
+                 * a lambda expression must be final
+                 * or effectively final
+                 */
+                final String displayCurrent =
+                        currentName.isEmpty()
+                                ? String.valueOf(currentCode)
+                                : currentName;
+
+                activity.runOnUiThread(() ->
+                        showUpdate(
+                                activity,
+                                displayCurrent,
+                                latestName,
+                                apkUrl,
+                                force,
+                                note
+                        )
+                );
+
             } catch (Exception ignored) {
-                // ไม่มีอินเทอร์เน็ต / server ไม่ตอบ
-                // ให้แอปทำงานต่อได้ตามปกติ
+
+                // ไม่มี Internet / Server ไม่ตอบ
+                // ไม่รบกวนการใช้งานแอป
+
+            } finally {
+
+                if (connection != null) {
+                    connection.disconnect();
+                }
             }
+
         }).start();
     }
 
-    private static void showUpdate(
-        Activity a,
-        String version,
-        String apkUrl,
-        boolean force,
-        String note
+    private static int getCurrentVersionCode(
+            Activity activity
     ) {
 
-        AlertDialog.Builder b = new AlertDialog.Builder(a);
+        try {
 
-        b.setTitle("📲 อัปเดตเวอร์ชันใหม่");
+            PackageInfo info =
+                    activity
+                            .getPackageManager()
+                            .getPackageInfo(
+                                    activity.getPackageName(),
+                                    0
+                            );
 
-        b.setMessage(
-            "มีเวอร์ชันใหม่ " + version +
-            "\n\n" + note +
-            "\n\nกรุณาอัปเดตเพื่อใช้งาน APO MAEKAE ต่อ"
-        );
+            if (Build.VERSION.SDK_INT >= 28) {
 
-        b.setPositiveButton(
-            "☁ ดาวน์โหลดและติดตั้ง",
-            (d, w) -> {
-                if (!apkUrl.isEmpty()) {
-                    try {
-                        a.startActivity(
-                            new Intent(
-                                Intent.ACTION_VIEW,
-                                Uri.parse(apkUrl)
-                            )
-                        );
-                    } catch (Exception e) {
-                        Toast.makeText(
-                            a,
-                            "ไม่สามารถเปิดลิงก์ APK ได้",
-                            Toast.LENGTH_LONG
-                        ).show();
-                    }
-                }
+                return (int)
+                        info.getLongVersionCode();
             }
+
+            return info.versionCode;
+
+        } catch (Exception e) {
+
+            return 0;
+        }
+    }
+
+    private static String getCurrentVersionName(
+            Activity activity
+    ) {
+
+        try {
+
+            PackageInfo info =
+                    activity
+                            .getPackageManager()
+                            .getPackageInfo(
+                                    activity.getPackageName(),
+                                    0
+                            );
+
+            return info.versionName == null
+                    ? ""
+                    : info.versionName;
+
+        } catch (Exception e) {
+
+            return "";
+        }
+    }
+
+    private static void showUpdate(
+            Activity activity,
+            String currentVersion,
+            String latestVersion,
+            String apkUrl,
+            boolean force,
+            String note
+    ) {
+
+        AlertDialog.Builder builder =
+                new AlertDialog.Builder(activity);
+
+        builder.setTitle(
+                "📲 มีเวอร์ชันใหม่"
         );
 
-        b.setNegativeButton(
-            "⬆ ดาวน์โหลดผ่านเบราว์เซอร์",
-            (d, w) -> {
-                if (!apkUrl.isEmpty()) {
-                    a.startActivity(
-                        new Intent(
-                            Intent.ACTION_VIEW,
-                            Uri.parse(apkUrl)
+        builder.setMessage(
+                "เวอร์ชันปัจจุบัน: "
+                        + currentVersion
+                        + "\n"
+                        + "เวอร์ชันล่าสุด: "
+                        + latestVersion
+                        + "\n\n"
+                        + note
+                        + "\n\n"
+                        + "กรุณาอัปเดตเป็นเวอร์ชันล่าสุด"
+        );
+
+        builder.setPositiveButton(
+                "⬇️ ดาวน์โหลด APK",
+                (dialog, which) ->
+                        openApk(
+                                activity,
+                                apkUrl
                         )
-                    );
-                }
-            }
         );
 
-        if (force) {
-            b.setCancelable(false);
+        if (!force) {
+
+            builder.setNegativeButton(
+                    "ไว้ก่อน",
+                    null
+            );
+
         } else {
-            b.setCancelable(true);
+
+            builder.setCancelable(false);
         }
 
-        b.show();
+        builder.show();
+    }
+
+    private static void openApk(
+            Activity activity,
+            String apkUrl
+    ) {
+
+        if (apkUrl == null ||
+                apkUrl.trim().isEmpty()) {
+
+            Toast.makeText(
+                    activity,
+                    "ยังไม่มีลิงก์ APK เวอร์ชันล่าสุด",
+                    Toast.LENGTH_LONG
+            ).show();
+
+            return;
+        }
+
+        try {
+
+            Intent intent =
+                    new Intent(
+                            Intent.ACTION_VIEW,
+                            Uri.parse(apkUrl)
+                    );
+
+            activity.startActivity(intent);
+
+        } catch (Exception e) {
+
+            Toast.makeText(
+                    activity,
+                    "เปิดลิงก์ APK ไม่ได้",
+                    Toast.LENGTH_LONG
+            ).show();
+        }
     }
 }

@@ -1,199 +1,191 @@
 #!/data/data/com.termux/files/usr/bin/bash
-set -euo pipefail
 
-cd "$(dirname "$0")"
+set -e
+
+PROJECT="$HOME/ApoMaeKae"
+cd "$PROJECT"
 
 REPO="rpoling123/ApoMaeKae"
-PKG="app/build.gradle"
-LICENSE="app/src/main/java/com/apomaekae/license/LicenseClient.java"
-COUNTDOWN="app/src/main/java/com/apomaekae/license/KeyCountdown.java"
-
-DOWNLOAD_DIR="$HOME/storage/downloads"
 
 echo "=============================================="
 echo " APO MAE KAE"
-echo " KEY LOCK + COUNTDOWN + GITHUB APK"
+echo " KEY LOCK + COUNTDOWN + GITHUB RELEASE"
 echo "=============================================="
 
-# -----------------------------
-# VERSION
-# -----------------------------
-VERSION=$(sed -n \
-'s/.*versionName[[:space:]]*['"'"'"][^'"'"'"]*['"'"'"].*/\0/p' \
-"$PKG" | grep -oE "[0-9]+\.[0-9]+\.[0-9]+" | head -n1)
+# ==================================================
+# 1. หา VERSION จาก source จริง
+# ห้ามสร้าง version เอง
+# ==================================================
 
-if [ -z "$VERSION" ]; then
-    echo "❌ หา VERSION ไม่เจอ"
-    exit 1
-fi
+CURRENT_VERSION=""
 
-TAG="v$VERSION"
-
-echo "📱 VERSION : $VERSION"
-echo "🔐 KEY     : VERSION LOCK"
-echo "⏳ COUNTDOWN: เปิดใช้งาน"
-echo ""
-
-# -----------------------------
-# ตรวจ KEY SYSTEM
-# -----------------------------
-if ! grep -q "api/license/check" "$LICENSE"; then
-    echo "❌ LicenseClient ไม่ได้เชื่อมระบบ KEY"
-    exit 1
-fi
-
-if ! grep -q "keyVersion" "$LICENSE"; then
-    echo "❌ ไม่มี keyVersion"
-    exit 1
-fi
-
-if ! grep -q "latestVersion" "$LICENSE"; then
-    echo "❌ ไม่มี latestVersion"
-    exit 1
-fi
-
-if ! grep -q "CountDownTimer" "$COUNTDOWN"; then
-    echo "❌ ไม่มีระบบ Countdown"
-    exit 1
-fi
-
-echo "✅ KEY API เชื่อมระบบเดิม"
-echo "✅ KEY VERSION LOCK"
-echo "✅ KEY COUNTDOWN"
-echo ""
-
-# -----------------------------
-# BUILD
-# -----------------------------
-echo "🧹 CLEAN..."
-chmod +x ./gradlew
-./gradlew clean
-
-echo ""
-echo "📦 BUILD APK..."
-./gradlew assembleDebug --stacktrace
-
-APK="app/build/outputs/apk/debug/app-debug.apk"
-
-if [ ! -f "$APK" ]; then
-    echo "❌ ไม่พบ APK"
-    exit 1
-fi
-
-# -----------------------------
-# COPY DOWNLOADS
-# -----------------------------
-mkdir -p "$DOWNLOAD_DIR"
-
-OUT="$DOWNLOAD_DIR/ApoMaeKae-$VERSION-KEY-LOCK.apk"
-
-cp -f "$APK" "$OUT"
-
-echo ""
-echo "=============================================="
-echo "📦 APK BUILD สำเร็จ"
-echo "=============================================="
-
-ls -lh "$OUT"
-
-# -----------------------------
-# INSTALL
-# -----------------------------
-echo ""
-echo "📲 เปิดติดตั้ง APK..."
-
-if command -v termux-open >/dev/null 2>&1; then
-    termux-open "$OUT" || true
-else
-    echo "เปิดไฟล์นี้เพื่อติดตั้ง:"
-    echo "$OUT"
-fi
-
-# -----------------------------
-# GIT
-# -----------------------------
-echo ""
-echo "=============================================="
-echo "🔄 GIT UPDATE"
-echo "=============================================="
-
-git add \
+for FILE in \
     app/build.gradle \
-    app/src/main/java/com/apomaekae/license/LicenseClient.java \
-    app/src/main/java/com/apomaekae/license/KeyCountdown.java \
-    update_key_lock_install.sh
+    app/build.gradle.kts \
+    build.gradle \
+    build.gradle.kts
+do
+    if [ -f "$FILE" ]; then
 
-if git diff --cached --quiet; then
-    echo "ℹ️ ไม่มี Source เปลี่ยน"
-else
-    git commit -m "Update KEY LOCK COUNTDOWN $TAG"
-    git push origin main
-    echo "✅ Git push สำเร็จ"
+        V=$(grep -m1 -E \
+        'versionName[[:space:]]*[= ]+[\"'\''][^\"'\'']+[\"'\'']' \
+        "$FILE" 2>/dev/null \
+        | sed -E 's/.*versionName[[:space:]]*[= ]+[\"'\'']([^\"'\'']+)[\"'\''].*/\1/')
+
+        if [ -n "$V" ]; then
+            CURRENT_VERSION="$V"
+            break
+        fi
+    fi
+done
+
+if [ -z "$CURRENT_VERSION" ]; then
+    echo "❌ ไม่พบ versionName ใน Gradle"
+    echo "หยุดทันที เพื่อป้องกันการสร้าง VERSION เอง"
+    exit 1
 fi
 
-# -----------------------------
-# GITHUB RELEASE
-# -----------------------------
-echo ""
+echo
+echo "📱 VERSION จาก SOURCE : $CURRENT_VERSION"
+
+# ==================================================
+# 2. ดึง Release ล่าสุดจาก GitHub
+# ไม่กำหนด VERSION เอง
+# ==================================================
+
+API="https://api.github.com/repos/$REPO/releases/latest"
+
+JSON=$(curl -fsSL \
+    -H "Accept: application/vnd.github+json" \
+    "$API")
+
+LATEST_TAG=$(printf '%s' "$JSON" |
+    grep '"tag_name"' |
+    head -1 |
+    sed -E 's/.*"tag_name":[[:space:]]*"([^"]+)".*/\1/')
+
+if [ -z "$LATEST_TAG" ]; then
+    echo "❌ อ่าน GitHub Release ล่าสุดไม่ได้"
+    exit 1
+fi
+
+LATEST_VERSION="${LATEST_TAG#v}"
+
+echo "🌐 GITHUB LATEST     : $LATEST_VERSION"
+
+# ==================================================
+# 3. หา APK จาก Release จริง
+# ==================================================
+
+APK_URL=$(printf '%s' "$JSON" |
+    grep '"browser_download_url"' |
+    grep -Ei '\.apk"' |
+    head -1 |
+    sed -E 's/.*"browser_download_url":[[:space:]]*"([^"]+)".*/\1/')
+
+if [ -z "$APK_URL" ]; then
+    echo "⚠️ Release ล่าสุดยังไม่มี APK"
+else
+    echo "📦 APK URL:"
+    echo "$APK_URL"
+fi
+
+# ==================================================
+# 4. เปรียบเทียบ VERSION
+# ==================================================
+
+version_gt() {
+    [ "$(printf '%s\n' "$1" "$2" | sort -V | tail -1)" = "$1" ] &&
+    [ "$1" != "$2" ]
+}
+
+echo
 echo "=============================================="
-echo "🚀 GITHUB RELEASE"
+echo " VERSION CHECK"
 echo "=============================================="
 
-if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
+if [ "$CURRENT_VERSION" = "$LATEST_VERSION" ]; then
 
-    if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
+    echo "✅ ใช้เวอร์ชันล่าสุดแล้ว"
+    echo "📱 Current : $CURRENT_VERSION"
+    echo "🌐 Latest  : $LATEST_VERSION"
+    echo
+    echo "⛔ ไม่ดาวน์โหลด APK"
+    echo "⛔ ไม่ติดตั้ง APK"
+    echo "=============================================="
 
-        echo "♻️ พบ Release $TAG"
-        echo "📤 อัปโหลด APK ทับ..."
+else
 
-        gh release upload \
-            "$TAG" \
-            "$OUT" \
-            --repo "$REPO" \
-            --clobber
+    if version_gt "$LATEST_VERSION" "$CURRENT_VERSION"; then
+
+        echo "🆕 พบเวอร์ชันใหม่"
+        echo "📱 Current : $CURRENT_VERSION"
+        echo "🌐 Latest  : $LATEST_VERSION"
+
+        if [ -z "$APK_URL" ]; then
+            echo "❌ ไม่มี APK ใน Release ล่าสุด"
+            exit 1
+        fi
+
+        mkdir -p "$HOME/storage/downloads"
+
+        FILE_NAME=$(basename "$APK_URL")
+        OUT="$HOME/storage/downloads/$FILE_NAME"
+
+        echo
+        echo "⬇️ ดาวน์โหลด APK จาก GitHub"
+        echo "$APK_URL"
+
+        curl -fL \
+            --retry 3 \
+            -o "$OUT" \
+            "$APK_URL"
+
+        echo
+        echo "✅ ดาวน์โหลดสำเร็จ"
+        ls -lh "$OUT"
 
     else
 
-        echo "🆕 สร้าง Release $TAG"
-
-        gh release create \
-            "$TAG" \
-            "$OUT" \
-            --repo "$REPO" \
-            --title "ApoMaeKae $TAG" \
-            --generate-notes
-
+        echo "⚠️ VERSION ใน SOURCE ใหม่กว่า GitHub"
+        echo "📱 Source  : $CURRENT_VERSION"
+        echo "🌐 GitHub  : $LATEST_VERSION"
+        echo
+        echo "⛔ ไม่สร้าง VERSION ใหม่"
+        echo "⛔ ไม่ดาวน์โหลด"
     fi
+fi
 
-    echo ""
-    echo "✅ GitHub Release สำเร็จ"
+# ==================================================
+# 5. Git
+# ==================================================
 
-    echo ""
-    echo "🔗 Release:"
-    echo "https://github.com/$REPO/releases/tag/$TAG"
+echo
+echo "=============================================="
+echo " GIT UPDATE"
+echo "=============================================="
 
-    echo ""
-    echo "⬇️ APK:"
-    echo "https://github.com/$REPO/releases/download/$TAG/ApoMaeKae-$VERSION-KEY-LOCK.apk"
+git status --short
+
+git add \
+    app/src/main \
+    server \
+    update_key_lock_install.sh \
+    2>/dev/null || true
+
+if git diff --cached --quiet; then
+
+    echo "ℹ️ ไม่มี source code ใหม่สำหรับ commit"
 
 else
 
-    echo "⚠️ ยังไม่ได้สร้าง Release อัตโนมัติ"
-    echo ""
-    echo "ถ้าต้องการให้สคริปต์สร้าง Release:"
-    echo ""
-    echo "pkg install gh -y"
-    echo "gh auth login"
-    echo "./update_key_lock_install.sh"
+    git commit -m "Update key lock and GitHub latest release check"
+    git push origin main
 
+    echo "✅ Git push สำเร็จ"
 fi
 
-echo ""
+echo
 echo "=============================================="
-echo "🎉 UPDATE เสร็จทั้งหมด"
-echo "=============================================="
-echo "VERSION : $VERSION"
-echo "APK     : $OUT"
-echo "KEY     : VERSION LOCK"
-echo "EXPIRY  : COUNTDOWN"
+echo "✅ เสร็จสิ้น"
 echo "=============================================="
