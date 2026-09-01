@@ -1,0 +1,261 @@
+package com.apomaekae.dragon;
+
+import android.Manifest;
+import android.app.Activity;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.graphics.Color;
+import android.os.Build;
+import android.os.Bundle;
+import android.os.Handler;
+import android.text.InputType;
+import android.view.Gravity;
+import android.widget.*;
+import com.apomaekae.license.LicenseClient;
+import java.text.SimpleDateFormat;
+import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+public class MainActivity extends Activity {
+    private LinearLayout root;
+    private EditText keyEdit;
+    private TextView licenseStatus, expiresText, remainText, gpsText, swipeCount;
+    private final Handler handler = new Handler();
+    private final ExecutorService executor = Executors.newSingleThreadExecutor();
+    private static final String CHANNEL = "apo_zone_alert";
+
+    // 13 มังกร รวมมังกรพิเศษ
+    private static final String[] DRAGONS = {
+        "มังกรขาว","มังกรเงิน","มังกรดำ","มังกรทอง","มังกรฟ้า",
+        "มังกรแดง","มังกรเขียว","มังกรม่วง","มังกรชมพู","มังกรส้ม",
+        "มังกรเหลือง","มังกรเทา","มังกรพิเศษ"
+    };
+
+    @Override public void onCreate(Bundle b) {
+        super.onCreate(b);
+        createNotificationChannel();
+        requestPermissionsIfNeeded();
+        showLicensePage();
+    }
+
+    private void base() {
+        FrameLayout frame = new FrameLayout(this);
+        ImageView bg = new ImageView(this);
+        bg.setImageResource(R.drawable.apomaekae_bg);
+        bg.setScaleType(ImageView.ScaleType.CENTER_CROP);
+        bg.setAlpha(1.0f);
+        frame.addView(bg, new FrameLayout.LayoutParams(-1,-1));
+
+        ScrollView scroll = new ScrollView(this);
+        root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setPadding(18,18,18,24);
+        scroll.addView(root);
+        frame.addView(scroll, new FrameLayout.LayoutParams(-1,-1));
+        setContentView(frame);
+    }
+
+    private void showLicensePage() {
+        base();
+        addTitle("🔐 APO MAEKAE V9.1 • ZONE GUARD",25,Gravity.CENTER);
+        addText("ใส่ KEY เพื่อเข้าสู่ระบบ • ตรวจสอบกับระบบ ADMIN แบบเรียลไทม์",16,Gravity.LEFT);
+
+        LinearLayout card = card();
+        card.addView(text("🔑 LICENSE / KEY",25,Gravity.LEFT),full());
+
+        keyEdit = new EditText(this);
+        keyEdit.setText(LicenseClient.getKey(this));
+        keyEdit.setHint("ใส่ KEY");
+        keyEdit.setTextSize(19);
+        keyEdit.setSingleLine(true);
+        keyEdit.setInputType(InputType.TYPE_CLASS_TEXT);
+        card.addView(keyEdit,full());
+
+        licenseStatus=text("⚪ LICENSE ยังไม่ได้ตรวจ",17,Gravity.LEFT);
+        expiresText=text("หมดอายุ: -",17,Gravity.LEFT);
+        remainText=text("เหลือ: -",17,Gravity.LEFT);
+        card.addView(licenseStatus,full());
+        card.addView(expiresText,full());
+        card.addView(remainText,full());
+
+        LinearLayout row=new LinearLayout(this);
+        Button check=button("บันทึก / ตรวจ KEY");
+        Button refresh=button("รีเฟรช");
+        row.addView(check,new LinearLayout.LayoutParams(0,-2,1));
+        row.addView(refresh,new LinearLayout.LayoutParams(0,-2,1));
+        card.addView(row,full());
+        check.setOnClickListener(v->verifyKey());
+        refresh.setOnClickListener(v->verifyKey());
+
+        Button buy=button("🛒 ซื้อ KEY ใหม่");
+        card.addView(buy,full());
+        buy.setOnClickListener(v->openUrl("https://apomaekae-2.onrender.com/buy-key.html"));
+
+        if(!LicenseClient.getKey(this).isEmpty()) verifyKey();
+    }
+
+    private void verifyKey() {
+        String key=keyEdit.getText().toString().trim();
+        if(key.isEmpty()){licenseStatus.setText("🔴 กรุณาใส่ KEY");return;}
+        licenseStatus.setText("🟡 กำลังตรวจ KEY...");
+        executor.execute(()->{
+            LicenseClient.Result r=LicenseClient.verify(this,key);
+            runOnUiThread(()->{
+                licenseStatus.setText(r.ok?"🟢 LICENSE ACTIVE":"🔴 "+r.message);
+                expiresText.setText("หมดอายุ: "+(r.expires.isEmpty()?"-":formatDate(r.expires)));
+                updateRemaining(r.expires);
+                if(r.ok) showHomePage();
+            });
+        });
+    }
+
+    private void showHomePage() {
+        base();
+        addTitle("🏠 APO MAEKAE V9.1 • ZONE GUARD",25,Gravity.CENTER);
+        addText("KEY: ตรวจสอบกับระบบ ADMIN ทุก 5 นาที",17,Gravity.LEFT);
+        addText("โซน: 13 มังกร • Buffer 500 เมตร • เสียงแจ้งเตือนภาษาไทย",17,Gravity.LEFT);
+
+        Button rider=button("🏍️ เปิดแอป LINE MAN RIDER");
+        Button dragon=button("🌧️🐉 มังกร + อินสาย");
+        Button maps=button("🗺️ เปิด GOOGLE MAPS");
+        Button eta=button("⏱️ ETA / งานใกล้");
+        Button stats=button("📊 สถิติการปัดงาน");
+        Button exit=button("ออกจากระบบ");
+
+        root.addView(rider,full()); root.addView(dragon,full()); root.addView(maps,full());
+        root.addView(eta,full()); root.addView(stats,full()); root.addView(exit,full());
+
+        rider.setOnClickListener(v->openUrl("https://lineman.line.me/rider/"));
+        dragon.setOnClickListener(v->showDragonPage());
+        maps.setOnClickListener(v->openMaps());
+        eta.setOnClickListener(v->Toast.makeText(this,"ETA จาก GPS ปัจจุบัน",Toast.LENGTH_SHORT).show());
+        stats.setOnClickListener(v->showSwipeStats());
+        exit.setOnClickListener(v->showLicensePage());
+    }
+
+    private void showDragonPage() {
+        base();
+        addTitle("🌧️🐉 APO MAEKAE V9.1 • มังกร+อินสาย",24,Gravity.CENTER);
+        addText("สถานะมังกร+อินสาย: 🟢 กำลังอิน • เลือก 1 โซน",17,Gravity.LEFT);
+        gpsText=text("GPS: กำลังอ่านตำแหน่ง | 🟢 ตรวจโซน • พัก 10 นาที",16,Gravity.LEFT);
+        root.addView(gpsText,full());
+
+        Button on=button("🌧️🐉 มังกร+อินสาย: ON");
+        Button check=button("▶ ตรวจโซนกำลังทำงาน");
+        Button pause=button("⏸ หยุดอิน / พัก 10 นาที");
+        Button outer=button("🟢 อินรอบนอก");
+        Button rain=button("🌧️ อินหน้าฝน");
+        Button maps=button("🗺️ เปิด GOOGLE MAPS");
+        root.addView(on,full()); root.addView(check,full()); root.addView(pause,full());
+        root.addView(outer,full()); root.addView(rain,full()); root.addView(maps,full());
+
+        addText("🐉 เลือกมังกรที่ต้องการอินได้หลายตัว:",17,Gravity.LEFT);
+        LinearLayout list=new LinearLayout(this);
+        list.setOrientation(LinearLayout.VERTICAL);
+        for(String d:DRAGONS){
+            CheckBox cb=new CheckBox(this);
+            cb.setText("🌧️🐉 "+d);
+            cb.setTextSize(17);
+            list.addView(cb,full());
+        }
+        root.addView(list,full());
+
+        on.setOnClickListener(v->notifyAlert("มังกร+อินสาย","เปิดใช้งานแล้ว"));
+        check.setOnClickListener(v->startGuard());
+        pause.setOnClickListener(v->notifyAlert("อินสาย","พัก 10 นาที"));
+        outer.setOnClickListener(v->notifyAlert("อินรอบนอก","เปิดใช้งานแล้ว"));
+        rain.setOnClickListener(v->notifyAlert("อินหน้าฝน","เปิดใช้งานแล้ว"));
+        maps.setOnClickListener(v->openMaps());
+    }
+
+    private void showSwipeStats() {
+        base();
+        addTitle("📊 สถิติการปัดงาน",24,Gravity.CENTER);
+        int n=com.apomaekae.zoneguard.PassOnlyManager.count(this);
+        swipeCount=text("ปัดงานใน APO: "+n+" งาน",22,Gravity.CENTER);
+        root.addView(swipeCount,full());
+
+        Button plus=button("➕ บันทึกปัดงาน +1");
+        Button reset=button("🗑️ รีเซ็ตสถิติ");
+        Button back=button("← กลับหน้า Home");
+        root.addView(plus,full()); root.addView(reset,full()); root.addView(back,full());
+
+        plus.setOnClickListener(v->{
+            com.apomaekae.zoneguard.PassOnlyManager.record(this);
+            int x=com.apomaekae.zoneguard.PassOnlyManager.count(this);
+            swipeCount.setText("ปัดงานใน APO: "+x+" งาน");
+            notifyAlert("สถิติการปัดงาน","ปัดแล้ว "+x+" งาน");
+        });
+        reset.setOnClickListener(v->{
+            getSharedPreferences("apo_pass",0).edit().putInt("count",0).apply();
+            swipeCount.setText("ปัดงานใน APO: 0 งาน");
+        });
+        back.setOnClickListener(v->showHomePage());
+        addText("ตัวนับนี้เป็นสถิติภายใน APO ไม่แก้ผลคำนวณของ LINE MAN",14,Gravity.LEFT);
+    }
+
+    private void startGuard() {
+        Intent i=new Intent(this,ZoneService.class);
+        if(Build.VERSION.SDK_INT>=26) startForegroundService(i); else startService(i);
+        if(gpsText!=null) gpsText.setText("🟢 กำลังตรวจ GPS • Buffer 500 เมตร • ทำงานเบื้องหลัง");
+        notifyAlert("ZONE GUARD","เริ่มตรวจโซนแล้ว");
+    }
+
+    private void createNotificationChannel() {
+        if(Build.VERSION.SDK_INT>=26){
+            NotificationChannel c=new NotificationChannel(CHANNEL,"APO MAEKAE Zone Alert",NotificationManager.IMPORTANCE_HIGH);
+            c.setDescription("เสียงแจ้งเตือน ZONE GUARD");
+            c.setSound(android.provider.Settings.System.DEFAULT_NOTIFICATION_URI,
+                new android.media.AudioAttributes.Builder()
+                    .setUsage(android.media.AudioAttributes.USAGE_NOTIFICATION).build());
+            ((NotificationManager)getSystemService(NOTIFICATION_SERVICE)).createNotificationChannel(c);
+        }
+    }
+
+    private void notifyAlert(String title,String msg){
+        try{
+            NotificationManager nm=(NotificationManager)getSystemService(NOTIFICATION_SERVICE);
+            android.app.Notification.Builder b=Build.VERSION.SDK_INT>=26
+                ?new android.app.Notification.Builder(this,CHANNEL)
+                :new android.app.Notification.Builder(this);
+            b.setSmallIcon(android.R.drawable.ic_dialog_info)
+             .setContentTitle("APO MAEKAE • "+title)
+             .setContentText(msg).setAutoCancel(true);
+            nm.notify((int)(System.currentTimeMillis()&0x7fffffff),b.build());
+        }catch(Exception ignored){}
+    }
+
+    private LinearLayout card(){LinearLayout c=new LinearLayout(this);c.setOrientation(LinearLayout.VERTICAL);c.setPadding(16,16,16,16);c.setBackgroundColor(0xEEF8FAF8);root.addView(c,full());return c;}
+    private Button button(String s){Button b=new Button(this);b.setText(s);b.setTextSize(16);return b;}
+    private TextView text(String s,float z,int g){TextView t=new TextView(this);t.setText(s);t.setTextSize(z);t.setGravity(g);t.setTextColor(Color.rgb(15,85,45));t.setPadding(4,7,4,7);return t;}
+    private void addTitle(String s,float z,int g){root.addView(text(s,z,g),full());}
+    private void addText(String s,float z,int g){root.addView(text(s,z,g),full());}
+    private LinearLayout.LayoutParams full(){return new LinearLayout.LayoutParams(-1,-2);}
+
+    private void requestPermissionsIfNeeded(){
+        if(Build.VERSION.SDK_INT>=23 && checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)!=PackageManager.PERMISSION_GRANTED)
+            requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION,Manifest.permission.ACCESS_COARSE_LOCATION},10);
+        if(Build.VERSION.SDK_INT>=33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED)
+            requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},11);
+    }
+
+    private void updateRemaining(String exp){
+        if(remainText==null||exp==null||exp.isEmpty())return;
+        try{
+            Date d=parseDate(exp);long ms=d.getTime()-System.currentTimeMillis();
+            if(ms<=0){remainText.setText("เหลือ: หมดอายุ");return;}
+            long s=ms/1000,days=s/86400;s%=86400;long h=s/3600;s%=3600;long m=s/60;s%=60;
+            remainText.setText(String.format(Locale.getDefault(),"เหลือ: %d วัน %02d:%02d:%02d",days,h,m,s));
+        }catch(Exception e){remainText.setText("เหลือ: "+exp);}
+    }
+
+    private String formatDate(String s){try{return new SimpleDateFormat("dd/MM/yyyy HH:mm:ss",Locale.getDefault()).format(parseDate(s));}catch(Exception e){return s;}}
+    private Date parseDate(String s)throws Exception{String x=s;if(x.endsWith("Z"))x=x.substring(0,x.length()-1);x=x.replace("T"," ");if(x.contains("."))x=x.substring(0,x.indexOf('.'));if(x.length()>19)x=x.substring(0,19);return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss",Locale.US).parse(x);}
+    private void openUrl(String u){try{startActivity(new Intent(Intent.ACTION_VIEW,android.net.Uri.parse(u)));}catch(Exception e){Toast.makeText(this,"เปิดไม่ได้",Toast.LENGTH_SHORT).show();}}
+    private void openMaps(){openUrl("https://maps.google.com/?q=13.736351,100.571805");}
+
+    @Override protected void onDestroy(){handler.removeCallbacksAndMessages(null);executor.shutdownNow();super.onDestroy();}
+}

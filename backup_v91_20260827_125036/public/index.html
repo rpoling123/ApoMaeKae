@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="th">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>APO MAEKAE V9 • ZONE GUARD</title>
+<style>
+*{box-sizing:border-box}
+body{font-family:system-ui,sans-serif;margin:0;min-height:100vh;background:#071207;color:#222;background-image:linear-gradient(#ffffffaa,#ffffffaa),url('/apomaekae_bg.jpg');background-size:cover;background-position:center;background-attachment:fixed}
+.wrap{max-width:680px;margin:auto;padding:22px 16px}
+.card{background:#fffdfdf2;border-radius:22px;padding:22px;margin-top:20px;box-shadow:0 8px 30px #0003}
+h1{margin:0 0 12px;color:#075d27;font-size:27px}
+h2{color:#075d27}
+input{width:100%;padding:15px;border:1px solid #ccc;border-radius:12px;font-size:18px;margin:8px 0}
+button{width:100%;padding:14px;border:0;border-radius:10px;background:#555;color:white;font-size:18px;margin-top:8px}
+.primary{background:#087f3e}
+.buy{background:#16803d}
+.status{margin-top:15px;padding:14px;border-radius:12px;background:#eee;font-size:17px}
+.ok{background:#e8f8ed;color:#087f3e}
+.bad{background:#ffeaea;color:#b91c1c}
+.info{background:#eef5ff;color:#174ea6}
+.small{font-size:14px;color:#666}
+#app{display:none}
+</style>
+
+<div class="wrap">
+<div class="card">
+<h1>🔐 APO MAEKAE V9 • ZONE GUARD</h1>
+<p>ใส่ KEY เพื่อเข้าสู่ระบบ และตรวจสอบกับระบบ ADMIN แบบเรียลไทม์</p>
+
+<input id="keyInput" placeholder="กรอก KEY เช่น APO-XXXXXXXX-XXXXXXXX" autocomplete="off">
+
+<button class="primary" onclick="checkKey()">🔑 ตรวจสอบ KEY / เข้าสู่ระบบ</button>
+<button class="buy" onclick="location.href='/buy-key.html'">🛒 ซื้อ Key</button>
+
+<div id="status" class="status">⚪ กรุณากรอก KEY</div>
+</div>
+
+<div id="app" class="card">
+<h1>🏠 APO MAEKAE V9 • ZONE GUARD</h1>
+
+<div class="status ok">
+🔑 KEY: <b id="showKey">-</b><br>
+📅 วันหมดอายุ: <b id="expires">-</b><br>
+⏳ เหลือเวลา: <b id="remain">-</b>
+</div>
+
+<button class="primary" onclick="openRider()">🛵 เปิดแอป LINE MAN RIDER</button>
+<button onclick="location.href='/buy-key.html'">🛒 ซื้อ / ต่ออายุ Key</button>
+<button onclick="logout()">🚪 ออกจากระบบ</button>
+</div>
+</div>
+
+<script>
+let currentKey="";
+let timer=null;
+
+function fmt(x){
+ return new Date(x).toLocaleString("th-TH",{
+  timeZone:"Asia/Bangkok",
+  year:"numeric",
+  month:"2-digit",
+  day:"2-digit",
+  hour:"2-digit",
+  minute:"2-digit",
+  second:"2-digit"
+ });
+}
+
+function remainText(ms){
+ if(ms<=0)return "หมดอายุแล้ว";
+ let s=Math.floor(ms/1000);
+ let d=Math.floor(s/86400);s%=86400;
+ let h=Math.floor(s/3600);s%=3600;
+ let m=Math.floor(s/60);s%=60;
+ return d+" วัน "+h+" ชม. "+m+" นาที "+s+" วินาที";
+}
+
+async function checkKey(){
+ const input=document.getElementById("keyInput");
+ const status=document.getElementById("status");
+ const k=input.value.trim().toUpperCase();
+
+ if(!k){
+  status.className="status bad";
+  status.textContent="❌ กรุณากรอก KEY";
+  return;
+ }
+
+ status.className="status info";
+ status.textContent="🔄 กำลังตรวจสอบ KEY กับระบบ ADMIN...";
+
+ try{
+  const r=await fetch("/api/license/check",{
+   method:"POST",
+   headers:{"Content-Type":"application/json"},
+   body:JSON.stringify({key:k})
+  });
+
+  const j=await r.json();
+
+  if(!j.active){
+   document.getElementById("app").style.display="none";
+   status.className="status bad";
+   status.innerHTML="❌ "+(j.message||"KEY ไม่สามารถใช้งานได้")+
+     (j.expiresAt?"<br>📅 หมดอายุ: <b>"+fmt(j.expiresAt)+"</b>":"");
+   return;
+  }
+
+  currentKey=k;
+  localStorage.setItem("apo_key",k);
+
+  document.getElementById("showKey").textContent=k;
+  document.getElementById("expires").textContent=fmt(j.expiresAt);
+  document.getElementById("app").style.display="block";
+
+  status.className="status ok";
+  status.innerHTML="✅ KEY ใช้งานได้<br>📅 หมดอายุ: <b>"+fmt(j.expiresAt)+"</b>";
+
+  startTimer(j.expiresAt);
+
+ }catch(e){
+  status.className="status bad";
+  status.textContent="🔴 เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ กรุณาลองใหม่";
+ }
+}
+
+function startTimer(exp){
+ if(timer)clearInterval(timer);
+
+ function update(){
+  const left=Date.parse(exp)-Date.now();
+  document.getElementById("remain").textContent=remainText(left);
+
+  if(left<=0){
+   clearInterval(timer);
+   document.getElementById("app").style.display="none";
+   document.getElementById("status").className="status bad";
+   document.getElementById("status").textContent="❌ KEY หมดอายุแล้ว";
+  }
+ }
+
+ update();
+ timer=setInterval(update,1000);
+}
+
+function logout(){
+ currentKey="";
+ localStorage.removeItem("apo_key");
+ if(timer)clearInterval(timer);
+ document.getElementById("app").style.display="none";
+ document.getElementById("keyInput").value="";
+ document.getElementById("status").className="status";
+ document.getElementById("status").textContent="⚪ กรุณากรอก KEY";
+}
+
+function openRider(){
+ window.location.href="https://linemanwider.com/";
+}
+
+window.addEventListener("load",()=>{
+ const k=localStorage.getItem("apo_key");
+ if(k){
+  document.getElementById("keyInput").value=k;
+  checkKey();
+ }
+});
+</script>
