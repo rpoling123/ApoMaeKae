@@ -75,6 +75,7 @@ public final class LicenseClient {
             JSONObject body = new JSONObject();
             body.put("key", key.trim());
             body.put("deviceId", getDeviceId(context));
+            body.put("appVersion", getAppVersion(context));
 
             byte[] data = body.toString()
                     .getBytes(StandardCharsets.UTF_8);
@@ -143,6 +144,29 @@ public final class LicenseClient {
                         .putString("key", returnedKey.trim().toUpperCase())
                         .putString("expires", expires)
                         .putString("status", status)
+                        .putString("keyVersion",
+                                json.optString(
+                                        "keyVersion",
+                                        json.optString(
+                                                "appVersion",
+                                                getAppVersion(context)
+                                        )
+                                )
+                        )
+                        .putString(
+                                "latestVersion",
+                                json.optString(
+                                        "latestVersion",
+                                        getAppVersion(context)
+                                )
+                        )
+                        .putLong(
+                                "serverTime",
+                                json.optLong(
+                                        "serverTime",
+                                        System.currentTimeMillis()
+                                )
+                        )
                         .apply();
 
                 return new Result(
@@ -180,6 +204,51 @@ public final class LicenseClient {
     public static String getExpires(Context context) {
         return context.getSharedPreferences("license", Context.MODE_PRIVATE)
                 .getString("expires", "");
+    }
+
+    public static String getKeyVersion(Context context) {
+        return context
+                .getSharedPreferences("license", Context.MODE_PRIVATE)
+                .getString("keyVersion", "");
+    }
+
+    public static String getLatestVersion(Context context) {
+        return context
+                .getSharedPreferences("license", Context.MODE_PRIVATE)
+                .getString(
+                        "latestVersion",
+                        getAppVersion(context)
+                );
+    }
+
+    public static long getServerTime(Context context) {
+        return context
+                .getSharedPreferences("license", Context.MODE_PRIVATE)
+                .getLong(
+                        "serverTime",
+                        System.currentTimeMillis()
+                );
+    }
+
+    private static String getAppVersion(Context context) {
+        try {
+            android.content.pm.PackageManager pm =
+                    context.getPackageManager();
+
+            android.content.pm.PackageInfo info =
+                    pm.getPackageInfo(
+                            context.getPackageName(),
+                            0
+                    );
+
+            if (info.versionName != null) {
+                return info.versionName;
+            }
+
+        } catch (Exception ignored) {
+        }
+
+        return "";
     }
 
     public static final class Result {
