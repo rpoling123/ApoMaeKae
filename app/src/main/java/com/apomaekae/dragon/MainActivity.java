@@ -18,12 +18,11 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
 public class MainActivity extends Activity {
-    
-    // REALTIME GPS + KEY DATE/TIME
-private LinearLayout root;
+    private LinearLayout root;
     private EditText keyEdit;
-    private TextView licenseStatus, expiresText, remainText, gpsText, swipeCount, keyDateTimeText;
+    private TextView licenseStatus, expiresText, remainText, gpsText, swipeCount;
     private final Handler handler = new Handler();
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private static final String CHANNEL = "apo_zone_alert";
@@ -38,23 +37,8 @@ private LinearLayout root;
     @Override public void onCreate(Bundle b) {
         super.onCreate(b);
         createNotificationChannel();
-        ThaiVoice.init(this);
         requestPermissionsIfNeeded();
         showLicensePage();
-        startLicenseCountdown();
-        UpdateManager.check(this);
-    }
-
-    private void startLicenseCountdown() {
-        handler.post(new Runnable() {
-            @Override public void run() {
-                try {
-                    String exp = LicenseClient.getExpires(MainActivity.this);
-                    updateRemaining(exp);
-                } catch (Exception ignored) {}
-                handler.postDelayed(this, 1000);
-            }
-        });
     }
 
     private void base() {
@@ -71,19 +55,11 @@ private LinearLayout root;
         scroll.addView(root);
         frame.addView(scroll, new FrameLayout.LayoutParams(-1,-1));
         setContentView(frame);
-        try {
-            Intent gpsServiceIntent = new Intent(this, RealtimeGpsService.class);
-            if (android.os.Build.VERSION.SDK_INT >= 26) {
-                startForegroundService(gpsServiceIntent);
-            } else {
-                startService(gpsServiceIntent);
-            }
-        } catch (Exception ignored) {}
     }
 
     private void showLicensePage() {
         base();
-        addTitle("🔐 APO MAEKAE V9.2.4 • ZONE GUARD",25,Gravity.CENTER);
+        addTitle("🔐 APO MAEKAE V9.1 • ZONE GUARD",25,Gravity.CENTER);
         addText("ใส่ KEY เพื่อเข้าสู่ระบบ • ตรวจสอบกับระบบ ADMIN แบบเรียลไทม์",16,Gravity.LEFT);
 
         LinearLayout card = card();
@@ -130,12 +106,6 @@ private LinearLayout root;
                 licenseStatus.setText(r.ok?"🟢 LICENSE ACTIVE":"🔴 "+r.message);
                 expiresText.setText("หมดอายุ: "+(r.expires.isEmpty()?"-":formatDate(r.expires)));
                 updateRemaining(r.expires);
-                if(keyDateTimeText!=null){
-                    keyDateTimeText.setText(
-                        "📅 วันเวลา KEY หมดอายุ: " +
-                        (r.expires.isEmpty() ? "-" : formatDateTime(r.expires))
-                    );
-                }
                 if(r.ok) showHomePage();
             });
         });
@@ -143,9 +113,9 @@ private LinearLayout root;
 
     private void showHomePage() {
         base();
-        addTitle("🏠 APO MAEKAE V9.2.4 • ZONE GUARD",25,Gravity.CENTER);
+        addTitle("🏠 APO MAEKAE V9.1 • ZONE GUARD",25,Gravity.CENTER);
         addText("KEY: ตรวจสอบกับระบบ ADMIN ทุก 5 นาที",17,Gravity.LEFT);
-        addText("โซน: 13 มังกร • Buffer 100 เมตร • เสียงแจ้งเตือนภาษาไทย",17,Gravity.LEFT);
+        addText("โซน: 13 มังกร • Buffer 500 เมตร • เสียงแจ้งเตือนภาษาไทย",17,Gravity.LEFT);
 
         Button rider=button("🏍️ เปิดแอป LINE MAN RIDER");
         Button dragon=button("🌧️🐉 มังกร + อินสาย");
@@ -167,7 +137,7 @@ private LinearLayout root;
 
     private void showDragonPage() {
         base();
-        addTitle("🌧️🐉 APO MAEKAE V9.2.4 • มังกร+อินสาย",24,Gravity.CENTER);
+        addTitle("🌧️🐉 APO MAEKAE V9.1 • มังกร+อินสาย",24,Gravity.CENTER);
         addText("สถานะมังกร+อินสาย: 🟢 กำลังอิน • เลือก 1 โซน",17,Gravity.LEFT);
         gpsText=text("GPS: กำลังอ่านตำแหน่ง | 🟢 ตรวจโซน • พัก 10 นาที",16,Gravity.LEFT);
         root.addView(gpsText,full());
@@ -229,7 +199,7 @@ private LinearLayout root;
     private void startGuard() {
         Intent i=new Intent(this,ZoneService.class);
         if(Build.VERSION.SDK_INT>=26) startForegroundService(i); else startService(i);
-        if(gpsText!=null) gpsText.setText("🟢 กำลังตรวจ GPS • Buffer 100 เมตร • ทำงานเบื้องหลัง");
+        if(gpsText!=null) gpsText.setText("🟢 กำลังตรวจ GPS • Buffer 500 เมตร • ทำงานเบื้องหลัง");
         notifyAlert("ZONE GUARD","เริ่มตรวจโซนแล้ว");
     }
 
@@ -245,7 +215,6 @@ private LinearLayout root;
     }
 
     private void notifyAlert(String title,String msg){
-        ThaiVoice.speak(this, title + ". " + msg);
         try{
             NotificationManager nm=(NotificationManager)getSystemService(NOTIFICATION_SERVICE);
             android.app.Notification.Builder b=Build.VERSION.SDK_INT>=26
@@ -270,23 +239,6 @@ private LinearLayout root;
             requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION,Manifest.permission.ACCESS_COARSE_LOCATION},10);
         if(Build.VERSION.SDK_INT>=33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED)
             requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},11);
-    }
-
-    private String formatDateTime(String value){
-        try{
-            long t;
-            try{
-                t=Long.parseLong(value);
-            }catch(Exception e){
-                t=new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm:ss", java.util.Locale.getDefault()).parse(value).getTime();
-            }
-            return new java.text.SimpleDateFormat(
-                "dd/MM/yyyy HH:mm:ss",
-                java.util.Locale.getDefault()
-            ).format(new java.util.Date(t));
-        }catch(Exception e){
-            return value;
-        }
     }
 
     private void updateRemaining(String exp){
