@@ -198,12 +198,6 @@ value="1 เดือน" data-price="50">
 ยังไม่ได้เลือกแพ็กเกจ
 </div>
 
-<label>👤 ชื่อ / Facebook</label>
-<input id="name" placeholder="กรอกชื่อ">
-
-<label>📧 อีเมล</label>
-<input id="email" type="email" placeholder="กรอกอีเมล">
-
 <label>📎 แนบสลิป</label>
 
 <div class="upload">
@@ -300,15 +294,6 @@ r.readAsDataURL(f);
 };
 
 function send(){
-
-let n=
-document.getElementById('name')
-.value.trim();
-
-let e=
-document.getElementById('email')
-.value.trim();
-
 let selected=
 document.querySelector(
 'input[name="package"]:checked'
@@ -320,14 +305,6 @@ alert('กรุณาเลือกแพ็กเกจ Key');
 
 return;
 }
-
-if(!n){
-
-alert('กรุณากรอกชื่อ');
-
-return;
-}
-
 if(!s.files[0]){
 
 alert('กรุณาเลือกสลิป');
@@ -346,12 +323,6 @@ encodeURIComponent(selected.value)+
 '💰 ราคา: ฿'+
 encodeURIComponent(selected.dataset.price)+
 '%0A'+
-'👤 ชื่อ: '+
-encodeURIComponent(n)+
-'%0A'+
-'📧 อีเมล: '+
-encodeURIComponent(e||'-')+
-'%0A'+
 '📎 มีสลิปพร้อมส่งในแชท%0A'+
 '⏰ เวลา: '+
 encodeURIComponent(t);
@@ -362,11 +333,6 @@ location.href=
 }
 
 function clearForm(){
-
-document.getElementById('name').value='';
-
-document.getElementById('email').value='';
-
 document.querySelectorAll(
 'input[name="package"]'
 ).forEach(x=>x.checked=false);
