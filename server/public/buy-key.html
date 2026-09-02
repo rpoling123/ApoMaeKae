@@ -288,6 +288,7 @@ r.readAsDataURL(f);
 
 };
 
+async 
 async function send(){
 
     const selected =
@@ -316,11 +317,6 @@ async function send(){
         return;
     }
 
-    if (file.size > 10 * 1024 * 1024) {
-        alert('ไฟล์สลิปต้องไม่เกิน 10 MB');
-        return;
-    }
-
     const price =
         selected.dataset.price ||
         selected.getAttribute('data-price') ||
@@ -330,17 +326,48 @@ async function send(){
         selected.value || 'ไม่ระบุ';
 
     const message =
-        '🔑 ขอซื้อ Key ApoMaeKae\n' +
-        '📦 แพ็กเกจ: ' + packageName + '\n' +
-        '💰 ราคา: ฿' + price + '\n' +
-        '📎 สลิป: แนบในแชทนี้';
+        '🔑 ขอซื้อ Key ApoMaeKae
+' +
+        '📦 แพ็กเกจ: ' + packageName + '
+' +
+        '💰 ราคา: ฿' + price + '
+' +
+        '📎 มีสลิปพร้อมส่ง';
 
-    // เปิดแชท Messenger เป้าหมายโดยตรง
-    const url =
+    /*
+     * เปิด Messenger โดยตรง
+     * ถ้า Android ไม่ยอมเปิดแอป
+     * ให้ fallback ไป m.me
+     */
+
+    const messengerApp =
+        'fb-messenger://user-thread/rpolingkang1234';
+
+    const messengerWeb =
         'https://m.me/rpolingkang1234?text=' +
         encodeURIComponent(message);
 
-    window.location.href = url;
+    let opened = false;
+
+    const onBlur = () => {
+        opened = true;
+    };
+
+    window.addEventListener('blur', onBlur);
+
+    // พยายามเปิดแอป Messenger
+    window.location.href = messengerApp;
+
+    // ถ้าเปิดแอปไม่ได้ ให้เปิด m.me
+    setTimeout(() => {
+
+        window.removeEventListener('blur', onBlur);
+
+        if (!opened) {
+            window.location.href = messengerWeb;
+        }
+
+    }, 1200);
 }
 
 </script>
