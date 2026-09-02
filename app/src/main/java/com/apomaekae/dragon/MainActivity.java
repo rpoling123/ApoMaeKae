@@ -83,7 +83,7 @@ private LinearLayout root;
 
     private void showLicensePage() {
         base();
-        addTitle("🔐 APO MAEKAE V9.1 • ZONE GUARD",25,Gravity.CENTER);
+        addTitle("🔐 APO MAEKAE V9.2.4 • ZONE GUARD",25,Gravity.CENTER);
         addText("ใส่ KEY เพื่อเข้าสู่ระบบ • ตรวจสอบกับระบบ ADMIN แบบเรียลไทม์",16,Gravity.LEFT);
 
         LinearLayout card = card();
@@ -143,7 +143,7 @@ private LinearLayout root;
 
     private void showHomePage() {
         base();
-        addTitle("🏠 APO MAEKAE V9.1 • ZONE GUARD",25,Gravity.CENTER);
+        addTitle("🏠 APO MAEKAE V9.2.4 • ZONE GUARD",25,Gravity.CENTER);
         addText("KEY: ตรวจสอบกับระบบ ADMIN ทุก 5 นาที",17,Gravity.LEFT);
         addText("โซน: 13 มังกร • Buffer 100 เมตร • เสียงแจ้งเตือนภาษาไทย",17,Gravity.LEFT);
 
@@ -167,7 +167,7 @@ private LinearLayout root;
 
     private void showDragonPage() {
         base();
-        addTitle("🌧️🐉 APO MAEKAE V9.1 • มังกร+อินสาย",24,Gravity.CENTER);
+        addTitle("🌧️🐉 APO MAEKAE V9.2.4 • มังกร+อินสาย",24,Gravity.CENTER);
         addText("สถานะมังกร+อินสาย: 🟢 กำลังอิน • เลือก 1 โซน",17,Gravity.LEFT);
         gpsText=text("GPS: กำลังอ่านตำแหน่ง | 🟢 ตรวจโซน • พัก 10 นาที",16,Gravity.LEFT);
         root.addView(gpsText,full());
