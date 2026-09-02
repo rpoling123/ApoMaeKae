@@ -210,14 +210,13 @@ accept="image/jpeg,image/png,image/webp">
 <img id="preview" alt="ตัวอย่างสลิป">
 
 <button class="btn msg" onclick="send()">
-💬 ส่งสลิปเข้า Messenger
-</button>
+💬 ส่งสลิปเข้า Messenger</button>
 
 <button class="btn clear" onclick="clearForm()">
 ล้างข้อมูล
 </button>
 
-<div class="note">เมื่อกดส่ง ระบบจะเปิดเมนูแชร์ Android พร้อมแนบรูปสลิปจริง ให้เลือก Messenger แล้วเลือกรายชื่อแชทได้เลย ไม่ใช้ Google Drive</div>
+<div class="note">เมื่อกด💬 ส่งสลิปเข้า Messenger</div>
 
 </div>
 
@@ -290,101 +289,58 @@ r.readAsDataURL(f);
 };
 
 async function send(){
-const selected=document.querySelector('input[name="package"]:checked');
-const file=s.files[0];
 
-if(!selected){
-alert('กรุณาเลือกแพ็กเกจ Key');
-return;
-}
+    const selected =
+        document.querySelector('input[name="package"]:checked');
 
-if(!file){
-alert('กรุณาเลือกสลิป');
-return;
-}
+    if (!selected) {
+        alert('กรุณาเลือกแพ็กเกจ Key');
+        return;
+    }
 
-if(!file.type.startsWith('image/')){
-alert('กรุณาเลือกไฟล์รูปภาพ');
-return;
-}
+    const fileInput =
+        document.querySelector('input[type="file"]');
 
-if(file.size>10*1024*1024){
-alert('ไฟล์ต้องไม่เกิน 10 MB');
-return;
-}
+    const file =
+        fileInput && fileInput.files
+            ? fileInput.files[0]
+            : null;
 
-const t=new Date().toLocaleString('th-TH');
+    if (!file) {
+        alert('กรุณาเลือกสลิป');
+        return;
+    }
 
-const text=
-'🔑 ขอซื้อ Key ApoMaeKae\n'+
-'📦 แพ็กเกจ: '+selected.value+'\n'+
-'💰 ราคา: ฿'+selected.dataset.price+'\n'+
-'⏰ เวลา: '+t;
+    if (!file.type.startsWith('image/')) {
+        alert('กรุณาเลือกไฟล์รูปภาพ');
+        return;
+    }
 
-try{
+    if (file.size > 10 * 1024 * 1024) {
+        alert('ไฟล์สลิปต้องไม่เกิน 10 MB');
+        return;
+    }
 
-/*
- * สำคัญ:
- * ส่ง File จริงผ่าน Android Share Sheet
- * ไม่มี Google Drive
- * ไม่มี URL ของรูป
- */
-if(navigator.share){
+    const price =
+        selected.dataset.price ||
+        selected.getAttribute('data-price') ||
+        '';
 
-let shareData={
-title:'ApoMaeKae',
-text:text,
-files:[file]
-};
+    const packageName =
+        selected.value || 'ไม่ระบุ';
 
-if(!navigator.canShare || navigator.canShare(shareData)){
+    const message =
+        '🔑 ขอซื้อ Key ApoMaeKae\n' +
+        '📦 แพ็กเกจ: ' + packageName + '\n' +
+        '💰 ราคา: ฿' + price + '\n' +
+        '📎 สลิป: แนบในแชทนี้';
 
-await navigator.share(shareData);
+    // เปิดแชท Messenger เป้าหมายโดยตรง
+    const url =
+        'https://m.me/rpolingkang1234?text=' +
+        encodeURIComponent(message);
 
-return;
-
-}
-
-}
-
-alert(
-'เบราว์เซอร์เครื่องนี้ไม่รองรับการส่งรูปจริงผ่าน Share\n\n'+
-'ให้เปิด Messenger แล้วแนบสลิปด้วยตนเอง'
-);
-
-}catch(e){
-
-if(e && e.name==='AbortError'){
-return;
-}
-
-alert(
-'ไม่สามารถเปิดการส่งรูปเข้า Messenger ได้\n'+
-'กรุณาลองกดส่งอีกครั้ง'
-);
-
-}
-
-}
-
-function clearForm(){
-document.querySelectorAll(
-'input[name="package"]'
-).forEach(x=>x.checked=false);
-
-packages.forEach(
-x=>x.classList.remove('selected')
-);
-
-selectedInfo.textContent=
-'ยังไม่ได้เลือกแพ็กเกจ';
-
-s.value='';
-
-p.src='';
-
-p.style.display='none';
-
+    window.location.href = url;
 }
 
 </script>
