@@ -210,18 +210,14 @@ accept="image/jpeg,image/png,image/webp">
 <img id="preview" alt="ตัวอย่างสลิป">
 
 <button class="btn msg" onclick="send()">
-💬 ส่งข้อมูลเข้า Messenger
+💬 ส่งสลิปเข้า Messenger
 </button>
 
 <button class="btn clear" onclick="clearForm()">
 ล้างข้อมูล
 </button>
 
-<div class="note">
-หลังเปิด Messenger ให้แนบสลิปในแชทอีกครั้ง
-เพราะเว็บไซต์ไม่สามารถแนบไฟล์เข้า Messenger
-อัตโนมัติผ่าน m.me ได้
-</div>
+<div class="note">เมื่อกดส่ง ระบบจะเปิดเมนูแชร์ Android พร้อมแนบรูปสลิปจริง ให้เลือก Messenger แล้วเลือกรายชื่อแชทได้เลย ไม่ใช้ Google Drive</div>
 
 </div>
 
@@ -293,42 +289,81 @@ r.readAsDataURL(f);
 
 };
 
-function send(){
-let selected=
-document.querySelector(
-'input[name="package"]:checked'
-);
+async function send(){
+const selected=document.querySelector('input[name="package"]:checked');
+const file=s.files[0];
 
 if(!selected){
-
 alert('กรุณาเลือกแพ็กเกจ Key');
-
 return;
 }
-if(!s.files[0]){
 
+if(!file){
 alert('กรุณาเลือกสลิป');
-
 return;
 }
 
-let t=
-new Date().toLocaleString('th-TH');
+if(!file.type.startsWith('image/')){
+alert('กรุณาเลือกไฟล์รูปภาพ');
+return;
+}
 
-let m=
-'🔑 ขอซื้อ Key ApoMaeKae%0A'+
-'📦 แพ็กเกจ: '+
-encodeURIComponent(selected.value)+
-'%0A'+
-'💰 ราคา: ฿'+
-encodeURIComponent(selected.dataset.price)+
-'%0A'+
-'📎 มีสลิปพร้อมส่งในแชท%0A'+
-'⏰ เวลา: '+
-encodeURIComponent(t);
+if(file.size>10*1024*1024){
+alert('ไฟล์ต้องไม่เกิน 10 MB');
+return;
+}
 
-location.href=
-'https://m.me/rpolingkang1234?text='+m;
+const t=new Date().toLocaleString('th-TH');
+
+const text=
+'🔑 ขอซื้อ Key ApoMaeKae\n'+
+'📦 แพ็กเกจ: '+selected.value+'\n'+
+'💰 ราคา: ฿'+selected.dataset.price+'\n'+
+'⏰ เวลา: '+t;
+
+try{
+
+/*
+ * สำคัญ:
+ * ส่ง File จริงผ่าน Android Share Sheet
+ * ไม่มี Google Drive
+ * ไม่มี URL ของรูป
+ */
+if(navigator.share){
+
+let shareData={
+title:'ApoMaeKae',
+text:text,
+files:[file]
+};
+
+if(!navigator.canShare || navigator.canShare(shareData)){
+
+await navigator.share(shareData);
+
+return;
+
+}
+
+}
+
+alert(
+'เบราว์เซอร์เครื่องนี้ไม่รองรับการส่งรูปจริงผ่าน Share\n\n'+
+'ให้เปิด Messenger แล้วแนบสลิปด้วยตนเอง'
+);
+
+}catch(e){
+
+if(e && e.name==='AbortError'){
+return;
+}
+
+alert(
+'ไม่สามารถเปิดการส่งรูปเข้า Messenger ได้\n'+
+'กรุณาลองกดส่งอีกครั้ง'
+);
+
+}
 
 }
 
