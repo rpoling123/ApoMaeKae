@@ -1,4 +1,9 @@
 package com.apomaekae.dragon;
+import java.util.List;
+import java.util.ArrayList;
+import android.widget.TextView;
+import android.widget.LinearLayout;
+import android.widget.CheckBox;
 import android.net.Uri;
 import android.location.LocationManager;
 import android.location.Location;
@@ -85,6 +90,126 @@ public class MainActivity extends Activity {
         } catch(Exception ignored) {}
 
         return false;
+    }
+
+
+    // =========================================================
+    // APO MAEKAE — รายการโซนหลัก 16 รายการ
+    // ไม่อ่านจาก Download
+    // =========================================================
+
+    private final String[] APO_ZONE_NAMES = {
+
+        "มังกรขาว",
+        "มังกรดำ",
+        "มังกรหยก",
+        "มังกรส้ม",
+        "มังกรทอง",
+        "มังกรเหลือง",
+        "มังกรฟ้า",
+        "มังกรเงิน",
+        "มังกรแดง",
+
+        "มังกรพิเศษ — สมุทรปราการ / ทุ่งครุ / พระประแดง / พระสมุทรเจดีย์",
+
+        "มังกรพิเศษ — ลาดกระบัง / บางพลี / บางเสาธง / บางบ่อ",
+
+        "มังกรพิเศษ — คลองหลวง / ลำลูกกา",
+
+        "มังกรพิเศษ — ดอนเมือง / เมืองปทุมธานี",
+
+        "อินสาย + พัก 10 นาที",
+        "อินรอบนอกเมือง",
+        "อินหน้าฝน"
+    };
+
+    private final boolean[] APO_ZONE_CHECKED =
+        new boolean[16];
+
+    private LinearLayout apoZoneContainer;
+
+    private void createApoZoneList() {
+
+        if (apoZoneContainer == null)
+            return;
+
+        apoZoneContainer.removeAllViews();
+
+        for (int i=0; i<APO_ZONE_NAMES.length; i++) {
+
+            final int index=i;
+
+            CheckBox cb =
+                new CheckBox(this);
+
+            cb.setText(
+                APO_ZONE_NAMES[index]
+            );
+
+            cb.setTextSize(15);
+
+            cb.setGravity(
+                Gravity.CENTER_VERTICAL
+            );
+
+            cb.setPadding(
+                8,4,8,4
+            );
+
+            cb.setChecked(
+                APO_ZONE_CHECKED[index]
+            );
+
+            cb.setOnCheckedChangeListener(
+                (buttonView, checked) -> {
+
+                    APO_ZONE_CHECKED[index] =
+                        checked;
+
+                    // อ่านชื่อโซนที่เลือก
+                    speakApoZone(
+                        APO_ZONE_NAMES[index],
+                        checked
+                    );
+
+                    // ระบบตรวจสอบโซนเดิมของแอป
+                    // จะเป็นผู้ใช้พิกัด GPS จริง
+                }
+            );
+
+            apoZoneContainer.addView(
+                cb,
+                new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                )
+            );
+        }
+    }
+
+    private void speakApoZone(
+        String name,
+        boolean checked
+    ) {
+
+        try {
+
+            if (tts == null)
+                return;
+
+            String text =
+                checked
+                ? "เปิด " + name
+                : "ปิด " + name;
+
+            tts.speak(
+                text,
+                android.speech.tts.TextToSpeech.QUEUE_FLUSH,
+                null,
+                "APO_ZONE_" + System.currentTimeMillis()
+            );
+
+        } catch(Exception ignored) {}
     }
 
     private void initZoneTts() {
@@ -229,6 +354,26 @@ private void base() {
     }
 
     private void showDragonPage() {
+
+        apoZoneContainer =
+            new LinearLayout(this);
+
+        apoZoneContainer.setOrientation(
+            LinearLayout.VERTICAL
+        );
+
+        apoZoneContainer.setPadding(
+            4,4,4,4
+        );
+
+        root.addView(
+            apoZoneContainer,
+            full()
+        );
+
+        createApoZoneList();
+
+
         base();
         addTitle("🌧️🐉 APO MAEKAE V9.1 • ",24,Gravity.CENTER);
         addText("สถานะ: 🟢 กำลังอิน • เลือก 1 โซน",17,Gravity.LEFT);
