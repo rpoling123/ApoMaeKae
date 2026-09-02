@@ -10,6 +10,7 @@ import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.speech.tts.TextToSpeech;
 import android.text.InputType;
 import android.view.Gravity;
 import android.widget.*;
@@ -26,6 +27,7 @@ public class MainActivity extends Activity {
     private final Handler handler = new Handler();
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private static final String CHANNEL = "apo_zone_alert";
+    private TextToSpeech zoneTts;
 
     // 13 มังกร รวมมังกรพิเศษ
     private static final String[] DRAGONS = {
@@ -39,6 +41,34 @@ public class MainActivity extends Activity {
         createNotificationChannel();
         requestPermissionsIfNeeded();
         showLicensePage();
+        initZoneTts();
+    }
+
+    private void initZoneTts() {
+        zoneTts = new TextToSpeech(this, status -> {
+            if (status == TextToSpeech.SUCCESS) {
+                int result = zoneTts.setLanguage(new Locale("th", "TH"));
+                if (result == TextToSpeech.LANG_MISSING_DATA ||
+                    result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                    zoneTts.setLanguage(Locale.getDefault());
+                }
+                zoneTts.setSpeechRate(0.95f);
+                zoneTts.setPitch(1.0f);
+            }
+        });
+    }
+
+    private void speakZone(String text) {
+        try {
+            if (zoneTts != null) {
+                zoneTts.speak(
+                    text,
+                    TextToSpeech.QUEUE_FLUSH,
+                    null,
+                    "zone_select_" + System.currentTimeMillis()
+                );
+            }
+        } catch (Exception ignored) {}
     }
 
     private void base() {
@@ -158,6 +188,15 @@ public class MainActivity extends Activity {
             CheckBox cb=new CheckBox(this);
             cb.setText("🌧️🐉 "+d);
             cb.setTextSize(17);
+
+            cb.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                if (isChecked) {
+                    speakZone("เลือก " + d);
+                } else {
+                    speakZone("ยกเลิก " + d);
+                }
+            });
+
             list.addView(cb,full());
         }
         root.addView(list,full());
@@ -256,5 +295,18 @@ public class MainActivity extends Activity {
     private void openUrl(String u){try{startActivity(new Intent(Intent.ACTION_VIEW,android.net.Uri.parse(u)));}catch(Exception e){Toast.makeText(this,"เปิดไม่ได้",Toast.LENGTH_SHORT).show();}}
     private void openMaps(){openUrl("https://maps.google.com/?q=13.736351,100.571805");}
 
-    @Override protected void onDestroy(){handler.removeCallbacksAndMessages(null);executor.shutdownNow();super.onDestroy();}
+    @Override protected void onDestroy(){
+        handler.removeCallbacksAndMessages(null);
+        executor.shutdownNow();
+
+        try {
+            if (zoneTts != null) {
+                zoneTts.stop();
+                zoneTts.shutdown();
+                zoneTts = null;
+            }
+        } catch (Exception ignored) {}
+
+        super.onDestroy();
+    }
 }
