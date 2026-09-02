@@ -1,191 +1,123 @@
 #!/data/data/com.termux/files/usr/bin/bash
 
-set -e
-
-PROJECT="$HOME/ApoMaeKae"
-cd "$PROJECT"
+set -u
 
 REPO="rpoling123/ApoMaeKae"
+API="https://api.github.com/repos/$REPO/releases/latest"
+DOWNLOAD_DIR="$HOME/storage/downloads"
 
 echo "=============================================="
-echo " APO MAE KAE"
-echo " KEY LOCK + COUNTDOWN + GITHUB RELEASE"
+echo "📦 APO MAE KAE — GITHUB LATEST INSTALLER"
 echo "=============================================="
 
-# ==================================================
-# 1. หา VERSION จาก source จริง
-# ห้ามสร้าง version เอง
-# ==================================================
+mkdir -p "$DOWNLOAD_DIR"
 
-CURRENT_VERSION=""
+# ตรวจ GitHub Release ล่าสุด
+JSON="$(curl -fsSL "$API")"
 
-for FILE in \
-    app/build.gradle \
-    app/build.gradle.kts \
-    build.gradle \
-    build.gradle.kts
-do
-    if [ -f "$FILE" ]; then
-
-        V=$(grep -m1 -E \
-        'versionName[[:space:]]*[= ]+[\"'\''][^\"'\'']+[\"'\'']' \
-        "$FILE" 2>/dev/null \
-        | sed -E 's/.*versionName[[:space:]]*[= ]+[\"'\'']([^\"'\'']+)[\"'\''].*/\1/')
-
-        if [ -n "$V" ]; then
-            CURRENT_VERSION="$V"
-            break
-        fi
-    fi
-done
-
-if [ -z "$CURRENT_VERSION" ]; then
-    echo "❌ ไม่พบ versionName ใน Gradle"
-    echo "หยุดทันที เพื่อป้องกันการสร้าง VERSION เอง"
+if [ -z "$JSON" ]; then
+    echo "❌ ติดต่อ GitHub ไม่สำเร็จ"
     exit 1
 fi
 
-echo
-echo "📱 VERSION จาก SOURCE : $CURRENT_VERSION"
+LATEST_TAG="$(printf '%s' "$JSON" \
+    | grep '"tag_name":' \
+    | head -1 \
+    | sed 's/.*"tag_name":[[:space:]]*"//;s/".*//')"
 
-# ==================================================
-# 2. ดึง Release ล่าสุดจาก GitHub
-# ไม่กำหนด VERSION เอง
-# ==================================================
-
-API="https://api.github.com/repos/$REPO/releases/latest"
-
-JSON=$(curl -fsSL \
-    -H "Accept: application/vnd.github+json" \
-    "$API")
-
-LATEST_TAG=$(printf '%s' "$JSON" |
-    grep '"tag_name"' |
-    head -1 |
-    sed -E 's/.*"tag_name":[[:space:]]*"([^"]+)".*/\1/')
+APK_URL="$(printf '%s' "$JSON" \
+    | grep '"browser_download_url":' \
+    | grep -E '\.apk"' \
+    | head -1 \
+    | sed 's/.*"browser_download_url":[[:space:]]*"//;s/".*//')"
 
 if [ -z "$LATEST_TAG" ]; then
-    echo "❌ อ่าน GitHub Release ล่าสุดไม่ได้"
+    echo "❌ อ่าน Version ล่าสุดจาก GitHub ไม่ได้"
     exit 1
 fi
 
-LATEST_VERSION="${LATEST_TAG#v}"
-
-echo "🌐 GITHUB LATEST     : $LATEST_VERSION"
-
-# ==================================================
-# 3. หา APK จาก Release จริง
-# ==================================================
-
-APK_URL=$(printf '%s' "$JSON" |
-    grep '"browser_download_url"' |
-    grep -Ei '\.apk"' |
-    head -1 |
-    sed -E 's/.*"browser_download_url":[[:space:]]*"([^"]+)".*/\1/')
-
 if [ -z "$APK_URL" ]; then
-    echo "⚠️ Release ล่าสุดยังไม่มี APK"
-else
-    echo "📦 APK URL:"
-    echo "$APK_URL"
+    echo "❌ Release ล่าสุดไม่มี APK"
+    echo "Release: $LATEST_TAG"
+    exit 1
 fi
 
-# ==================================================
-# 4. เปรียบเทียบ VERSION
-# ==================================================
+echo
+echo "📌 GitHub Release ล่าสุด: $LATEST_TAG"
 
-version_gt() {
-    [ "$(printf '%s\n' "$1" "$2" | sort -V | tail -1)" = "$1" ] &&
-    [ "$1" != "$2" ]
-}
+# ------------------------------------------------
+# หาชื่อ Package และ Version จาก APK ที่ติดตั้ง
+# ------------------------------------------------
+CURRENT_VERSION=""
+
+if command -v dumpsys >/dev/null 2>&1; then
+    CURRENT_VERSION="$(
+        dumpsys package com.apomaekae 2>/dev/null \
+        | grep -m1 'versionName=' \
+        | sed 's/.*versionName=//;s/[[:space:]].*//'
+    )"
+fi
+
+if [ -z "$CURRENT_VERSION" ]; then
+    CURRENT_VERSION="UNKNOWN"
+fi
+
+echo "📱 Version ในเครื่อง: $CURRENT_VERSION"
+
+# ตัด v ออกจาก GitHub tag
+LATEST_NUM="${LATEST_TAG#v}"
+CURRENT_NUM="${CURRENT_VERSION#v}"
 
 echo
-echo "=============================================="
-echo " VERSION CHECK"
-echo "=============================================="
 
-if [ "$CURRENT_VERSION" = "$LATEST_VERSION" ]; then
-
-    echo "✅ ใช้เวอร์ชันล่าสุดแล้ว"
-    echo "📱 Current : $CURRENT_VERSION"
-    echo "🌐 Latest  : $LATEST_VERSION"
-    echo
-    echo "⛔ ไม่ดาวน์โหลด APK"
-    echo "⛔ ไม่ติดตั้ง APK"
+# ------------------------------------------------
+# ถ้าเป็น Version ล่าสุดแล้ว ไม่ต้องดาวน์โหลด
+# ------------------------------------------------
+if [ "$CURRENT_NUM" = "$LATEST_NUM" ]; then
     echo "=============================================="
-
-else
-
-    if version_gt "$LATEST_VERSION" "$CURRENT_VERSION"; then
-
-        echo "🆕 พบเวอร์ชันใหม่"
-        echo "📱 Current : $CURRENT_VERSION"
-        echo "🌐 Latest  : $LATEST_VERSION"
-
-        if [ -z "$APK_URL" ]; then
-            echo "❌ ไม่มี APK ใน Release ล่าสุด"
-            exit 1
-        fi
-
-        mkdir -p "$HOME/storage/downloads"
-
-        FILE_NAME=$(basename "$APK_URL")
-        OUT="$HOME/storage/downloads/$FILE_NAME"
-
-        echo
-        echo "⬇️ ดาวน์โหลด APK จาก GitHub"
-        echo "$APK_URL"
-
-        curl -fL \
-            --retry 3 \
-            -o "$OUT" \
-            "$APK_URL"
-
-        echo
-        echo "✅ ดาวน์โหลดสำเร็จ"
-        ls -lh "$OUT"
-
-    else
-
-        echo "⚠️ VERSION ใน SOURCE ใหม่กว่า GitHub"
-        echo "📱 Source  : $CURRENT_VERSION"
-        echo "🌐 GitHub  : $LATEST_VERSION"
-        echo
-        echo "⛔ ไม่สร้าง VERSION ใหม่"
-        echo "⛔ ไม่ดาวน์โหลด"
-    fi
+    echo "✅ เป็น Version ล่าสุดแล้ว"
+    echo "🚫 ไม่ดาวน์โหลด APK"
+    echo "🚫 ไม่สร้าง Version ใหม่"
+    echo "=============================================="
+    exit 0
 fi
 
-# ==================================================
-# 5. Git
-# ==================================================
+echo "🆕 พบ Version ใหม่"
+echo "   เครื่อง : $CURRENT_VERSION"
+echo "   GitHub  : $LATEST_TAG"
+
+# ------------------------------------------------
+# ดาวน์โหลด APK
+# ------------------------------------------------
+APK="$DOWNLOAD_DIR/ApoMaeKae-$LATEST_TAG.apk"
 
 echo
-echo "=============================================="
-echo " GIT UPDATE"
-echo "=============================================="
+echo "⬇️ กำลังดาวน์โหลด..."
+echo "$APK_URL"
 
-git status --short
+if ! curl -fL "$APK_URL" -o "$APK"; then
+    echo "❌ ดาวน์โหลด APK ไม่สำเร็จ"
+    rm -f "$APK"
+    exit 1
+fi
 
-git add \
-    app/src/main \
-    server \
-    update_key_lock_install.sh \
-    2>/dev/null || true
-
-if git diff --cached --quiet; then
-
-    echo "ℹ️ ไม่มี source code ใหม่สำหรับ commit"
-
-else
-
-    git commit -m "Update key lock and GitHub latest release check"
-    git push origin main
-
-    echo "✅ Git push สำเร็จ"
+if [ ! -s "$APK" ]; then
+    echo "❌ APK ว่างหรือดาวน์โหลดไม่สมบูรณ์"
+    rm -f "$APK"
+    exit 1
 fi
 
 echo
 echo "=============================================="
-echo "✅ เสร็จสิ้น"
+echo "✅ ดาวน์โหลดสำเร็จ"
+echo "📦 $APK"
+echo "📌 Version: $LATEST_TAG"
 echo "=============================================="
+
+# เปิดติดตั้ง
+if command -v termux-open >/dev/null 2>&1; then
+    termux-open "$APK"
+else
+    echo "📂 เปิดไฟล์นี้เพื่อติดตั้ง:"
+    echo "$APK"
+fi
