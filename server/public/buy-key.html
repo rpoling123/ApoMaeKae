@@ -4,24 +4,199 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>ApoMaeKae - ซื้อ Key</title>
+
 <style>
-body{font-family:Arial,sans-serif;background:#f4f7f8;margin:0;padding:20px;color:#222}
-.card{max-width:520px;margin:auto;background:#fff;padding:24px;border-radius:20px;box-shadow:0 8px 30px #0002}
-h1{text-align:center}label{display:block;font-weight:bold;margin:16px 0 8px}
-input{width:100%;padding:13px;border:1px solid #ddd;border-radius:10px;box-sizing:border-box}
-.upload{border:2px dashed #aaa;padding:18px;border-radius:14px;text-align:center}
-#preview{display:none;width:100%;max-height:400px;object-fit:contain;margin-top:15px;border-radius:12px}
-.btn{width:100%;padding:15px;border:0;border-radius:12px;margin-top:15px;font-size:17px;font-weight:bold}
-.msg{background:#08f;color:#fff}.clear{background:#eee}
-.status{background:#e8f5e9;padding:12px;border-radius:12px;text-align:center}
-.note{font-size:13px;color:#666;line-height:1.6;margin-top:15px}
+body{
+font-family:Arial,sans-serif;
+background:#f4f7f8;
+margin:0;
+padding:20px;
+color:#222
+}
+
+.card{
+max-width:520px;
+margin:auto;
+background:#fff;
+padding:24px;
+border-radius:20px;
+box-shadow:0 8px 30px #0002
+}
+
+h1{
+text-align:center;
+font-size:34px;
+margin:8px 0 20px
+}
+
+.status{
+background:#e8f5e9;
+padding:14px;
+border-radius:14px;
+text-align:center;
+font-weight:bold;
+margin-bottom:20px
+}
+
+label{
+display:block;
+font-weight:bold;
+margin:16px 0 8px;
+font-size:18px
+}
+
+input{
+width:100%;
+padding:13px;
+border:1px solid #ddd;
+border-radius:10px;
+box-sizing:border-box;
+font-size:16px
+}
+
+.packages{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:10px;
+margin-top:10px
+}
+
+.package{
+border:2px solid #ddd;
+border-radius:14px;
+padding:14px;
+background:#fff;
+cursor:pointer;
+text-align:center;
+transition:.15s
+}
+
+.package:hover{
+border-color:#008f3d
+}
+
+.package input{
+display:none
+}
+
+.package.selected{
+border-color:#008f3d;
+background:#e8f8ee
+}
+
+.price{
+font-size:25px;
+font-weight:bold;
+color:#008f3d
+}
+
+.days{
+font-size:15px;
+margin-top:4px
+}
+
+.selectedInfo{
+background:#f1f8f3;
+border-radius:12px;
+padding:12px;
+margin-top:12px;
+text-align:center;
+font-weight:bold
+}
+
+.upload{
+border:2px dashed #aaa;
+padding:18px;
+border-radius:14px;
+text-align:center
+}
+
+#preview{
+display:none;
+width:100%;
+max-height:400px;
+object-fit:contain;
+margin-top:15px;
+border-radius:12px
+}
+
+.btn{
+width:100%;
+padding:15px;
+border:0;
+border-radius:12px;
+margin-top:15px;
+font-size:17px;
+font-weight:bold;
+cursor:pointer
+}
+
+.msg{
+background:#08f;
+color:#fff
+}
+
+.clear{
+background:#eee;
+color:#222
+}
+
+.note{
+font-size:13px;
+color:#666;
+line-height:1.6;
+margin-top:15px
+}
 </style>
 </head>
-<body>
-<div class="card">
-<h1>🔑 ซื้อ Key ApoMaeKae</h1>
 
-<div class="status">🟢 ระบบพร้อมรับการชำระเงิน</div>
+<body>
+
+<div class="card">
+
+<h1>🔑 ซื้อ Key<br>ApoMaeKae</h1>
+
+<div class="status">
+🟢 ระบบพร้อมรับการชำระเงิน
+</div>
+
+<label>📦 เลือกแพ็กเกจ Key</label>
+
+<div class="packages">
+
+<label class="package">
+<input type="radio" name="package"
+value="1 วัน" data-price="5">
+<div class="price">฿5</div>
+<div class="days">1 วัน</div>
+</label>
+
+<label class="package">
+<input type="radio" name="package"
+value="7 วัน" data-price="20">
+<div class="price">฿20</div>
+<div class="days">7 วัน</div>
+</label>
+
+<label class="package">
+<input type="radio" name="package"
+value="20 วัน" data-price="30">
+<div class="price">฿30</div>
+<div class="days">20 วัน</div>
+</label>
+
+<label class="package">
+<input type="radio" name="package"
+value="1 เดือน" data-price="50">
+<div class="price">฿50</div>
+<div class="days">1 เดือน</div>
+</label>
+
+</div>
+
+<div class="selectedInfo" id="selectedInfo">
+ยังไม่ได้เลือกแพ็กเกจ
+</div>
 
 <label>👤 ชื่อ / Facebook</label>
 <input id="name" placeholder="กรอกชื่อ">
@@ -30,12 +205,15 @@ input{width:100%;padding:13px;border:1px solid #ddd;border-radius:10px;box-sizin
 <input id="email" type="email" placeholder="กรอกอีเมล">
 
 <label>📎 แนบสลิป</label>
+
 <div class="upload">
 เลือกภาพสลิป
-<input id="slip" type="file" accept="image/jpeg,image/png,image/webp">
+<input id="slip"
+type="file"
+accept="image/jpeg,image/png,image/webp">
 </div>
 
-<img id="preview">
+<img id="preview" alt="ตัวอย่างสลิป">
 
 <button class="btn msg" onclick="send()">
 💬 ส่งข้อมูลเข้า Messenger
@@ -50,70 +228,165 @@ input{width:100%;padding:13px;border:1px solid #ddd;border-radius:10px;box-sizin
 เพราะเว็บไซต์ไม่สามารถแนบไฟล์เข้า Messenger
 อัตโนมัติผ่าน m.me ได้
 </div>
+
 </div>
 
 <script>
+
 const s=document.getElementById('slip');
 const p=document.getElementById('preview');
+const packages=document.querySelectorAll('.package');
+const selectedInfo=document.getElementById('selectedInfo');
+
+packages.forEach(card=>{
+
+card.addEventListener('click',()=>{
+
+packages.forEach(x=>x.classList.remove('selected'));
+
+card.classList.add('selected');
+
+const input=card.querySelector('input');
+
+input.checked=true;
+
+selectedInfo.textContent=
+'เลือก: '+input.value+
+' — ฿'+input.dataset.price;
+
+});
+
+});
 
 s.onchange=()=>{
- let f=s.files[0];
- if(!f){
-   p.style.display='none';
-   return;
- }
- if(!f.type.startsWith('image/')){
-   alert('กรุณาเลือกไฟล์รูปภาพ');
-   s.value='';
-   return;
- }
- if(f.size>10*1024*1024){
-   alert('ไฟล์ต้องไม่เกิน 10 MB');
-   s.value='';
-   return;
- }
- let r=new FileReader();
- r.onload=e=>{
-   p.src=e.target.result;
-   p.style.display='block';
- };
- r.readAsDataURL(f);
+
+let f=s.files[0];
+
+if(!f){
+p.style.display='none';
+return;
+}
+
+if(!f.type.startsWith('image/')){
+
+alert('กรุณาเลือกไฟล์รูปภาพ');
+
+s.value='';
+
+return;
+}
+
+if(f.size>10*1024*1024){
+
+alert('ไฟล์ต้องไม่เกิน 10 MB');
+
+s.value='';
+
+return;
+}
+
+let r=new FileReader();
+
+r.onload=e=>{
+
+p.src=e.target.result;
+
+p.style.display='block';
+
+};
+
+r.readAsDataURL(f);
+
 };
 
 function send(){
- let n=document.getElementById('name').value.trim();
- let e=document.getElementById('email').value.trim();
 
- if(!n){
-   alert('กรุณากรอกชื่อ');
-   return;
- }
+let n=
+document.getElementById('name')
+.value.trim();
 
- if(!s.files[0]){
-   alert('กรุณาเลือกสลิป');
-   return;
- }
+let e=
+document.getElementById('email')
+.value.trim();
 
- let t=new Date().toLocaleString('th-TH');
+let selected=
+document.querySelector(
+'input[name="package"]:checked'
+);
 
- let m=
- '🔑 ขอซื้อ Key ApoMaeKae%0A'+
- '👤 ชื่อ: '+encodeURIComponent(n)+'%0A'+
- '📧 อีเมล: '+encodeURIComponent(e||'-')+'%0A'+
- '📎 มีสลิปพร้อมส่งในแชท%0A'+
- '⏰ เวลา: '+encodeURIComponent(t);
+if(!selected){
 
- location.href=
- 'https://m.me/rpolingkang1234?text='+m;
+alert('กรุณาเลือกแพ็กเกจ Key');
+
+return;
+}
+
+if(!n){
+
+alert('กรุณากรอกชื่อ');
+
+return;
+}
+
+if(!s.files[0]){
+
+alert('กรุณาเลือกสลิป');
+
+return;
+}
+
+let t=
+new Date().toLocaleString('th-TH');
+
+let m=
+'🔑 ขอซื้อ Key ApoMaeKae%0A'+
+'📦 แพ็กเกจ: '+
+encodeURIComponent(selected.value)+
+'%0A'+
+'💰 ราคา: ฿'+
+encodeURIComponent(selected.dataset.price)+
+'%0A'+
+'👤 ชื่อ: '+
+encodeURIComponent(n)+
+'%0A'+
+'📧 อีเมล: '+
+encodeURIComponent(e||'-')+
+'%0A'+
+'📎 มีสลิปพร้อมส่งในแชท%0A'+
+'⏰ เวลา: '+
+encodeURIComponent(t);
+
+location.href=
+'https://m.me/rpolingkang1234?text='+m;
+
 }
 
 function clearForm(){
- document.getElementById('name').value='';
- document.getElementById('email').value='';
- s.value='';
- p.src='';
- p.style.display='none';
+
+document.getElementById('name').value='';
+
+document.getElementById('email').value='';
+
+document.querySelectorAll(
+'input[name="package"]'
+).forEach(x=>x.checked=false);
+
+packages.forEach(
+x=>x.classList.remove('selected')
+);
+
+selectedInfo.textContent=
+'ยังไม่ได้เลือกแพ็กเกจ';
+
+s.value='';
+
+p.src='';
+
+p.style.display='none';
+
 }
+
 </script>
+
 </body>
 </html>
