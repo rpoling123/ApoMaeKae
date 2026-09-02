@@ -221,75 +221,56 @@ accept="image/jpeg,image/png,image/webp">
 </div>
 
 <script>
+const s = document.getElementById('slip');
+const p = document.getElementById('preview');
+const packages = document.querySelectorAll('.package');
+const selectedInfo = document.getElementById('selectedInfo');
 
-const s=document.getElementById('slip');
-const p=document.getElementById('preview');
-const packages=document.querySelectorAll('.package');
-const selectedInfo=document.getElementById('selectedInfo');
+packages.forEach(card => {
+    card.addEventListener('click', () => {
+        packages.forEach(x => x.classList.remove('selected'));
+        card.classList.add('selected');
 
-packages.forEach(card=>{
+        const input = card.querySelector('input');
+        input.checked = true;
 
-card.addEventListener('click',()=>{
-
-packages.forEach(x=>x.classList.remove('selected'));
-
-card.classList.add('selected');
-
-const input=card.querySelector('input');
-
-input.checked=true;
-
-selectedInfo.textContent=
-'เลือก: '+input.value+
-' — ฿'+input.dataset.price;
-
+        selectedInfo.textContent =
+            'เลือก: ' + input.value +
+            ' — ฿' + input.dataset.price;
+    });
 });
 
-});
+s.onchange = () => {
+    const f = s.files[0];
 
-s.onchange=()=>{
+    if (!f) {
+        p.style.display = 'none';
+        return;
+    }
 
-let f=s.files[0];
+    if (!f.type.startsWith('image/')) {
+        alert('กรุณาเลือกไฟล์รูปภาพ');
+        s.value = '';
+        return;
+    }
 
-if(!f){
-p.style.display='none';
-return;
-}
+    if (f.size > 10 * 1024 * 1024) {
+        alert('ไฟล์ต้องไม่เกิน 10 MB');
+        s.value = '';
+        return;
+    }
 
-if(!f.type.startsWith('image/')){
+    const r = new FileReader();
 
-alert('กรุณาเลือกไฟล์รูปภาพ');
+    r.onload = e => {
+        p.src = e.target.result;
+        p.style.display = 'block';
+    };
 
-s.value='';
-
-return;
-}
-
-if(f.size>10*1024*1024){
-
-alert('ไฟล์ต้องไม่เกิน 10 MB');
-
-s.value='';
-
-return;
-}
-
-let r=new FileReader();
-
-r.onload=e=>{
-
-p.src=e.target.result;
-
-p.style.display='block';
-
+    r.readAsDataURL(f);
 };
 
-r.readAsDataURL(f);
-
-};
-
-async 
-async function send(){
+async function send() {
 
     const selected =
         document.querySelector('input[name="package"]:checked');
@@ -299,13 +280,7 @@ async function send(){
         return;
     }
 
-    const fileInput =
-        document.querySelector('input[type="file"]');
-
-    const file =
-        fileInput && fileInput.files
-            ? fileInput.files[0]
-            : null;
+    const file = s.files && s.files[0];
 
     if (!file) {
         alert('กรุณาเลือกสลิป');
@@ -317,59 +292,104 @@ async function send(){
         return;
     }
 
-    const price =
-        selected.dataset.price ||
-        selected.getAttribute('data-price') ||
-        '';
-
-    const packageName =
-        selected.value || 'ไม่ระบุ';
+    const price = selected.dataset.price || '';
+    const packageName = selected.value || 'ไม่ระบุ';
 
     const message =
-        '🔑 ขอซื้อ Key ApoMaeKae
-' +
-        '📦 แพ็กเกจ: ' + packageName + '
-' +
-        '💰 ราคา: ฿' + price + '
-' +
-        '📎 มีสลิปพร้อมส่ง';
+        '🔑 ขอซื้อ Key ApoMaeKae\n' +
+        '📦 แพ็กเกจ: ' + packageName + '\n' +
+        '💰 ราคา: ฿' + price + '\n' +
+        '📎 แนบสลิปมาพร้อมข้อความนี้';
 
     /*
-     * เปิด Messenger โดยตรง
-     * ถ้า Android ไม่ยอมเปิดแอป
-     * ให้ fallback ไป m.me
+     * Android Web Share
+     * แชร์ "รูปจริง" เข้าแอป Messenger
      */
+    if (navigator.canShare && navigator.share) {
 
-    const messengerApp =
+        try {
+
+            const shareFile = new File(
+                [file],
+                file.name || 'slip.jpg',
+                { type: file.type }
+            );
+
+            const shareData = {
+                title: 'ซื้อ Key ApoMaeKae',
+                text: message,
+                files: [shareFile]
+            };
+
+            if (navigator.canShare({ files: [shareFile] })) {
+                await navigator.share(shareData);
+                return;
+            }
+
+        } catch (e) {
+
+            if (e && e.name === 'AbortError') {
+                return;
+            }
+
+        }
+    }
+
+    /*
+     * เปิด Messenger โดยตรงก่อน
+     * ถ้า Android ไม่รองรับ deep link
+     * ให้เปิด m.me
+     */
+    const appUrl =
         'fb-messenger://user-thread/rpolingkang1234';
 
-    const messengerWeb =
+    const webUrl =
         'https://m.me/rpolingkang1234?text=' +
         encodeURIComponent(message);
 
-    let opened = false;
+    let hidden = false;
 
-    const onBlur = () => {
-        opened = true;
+    const onVisibility = () => {
+        hidden = true;
     };
 
-    window.addEventListener('blur', onBlur);
+    document.addEventListener('visibilitychange', onVisibility);
 
-    // พยายามเปิดแอป Messenger
-    window.location.href = messengerApp;
+    window.location.href = appUrl;
 
-    // ถ้าเปิดแอปไม่ได้ ให้เปิด m.me
     setTimeout(() => {
 
-        window.removeEventListener('blur', onBlur);
+        document.removeEventListener(
+            'visibilitychange',
+            onVisibility
+        );
 
-        if (!opened) {
-            window.location.href = messengerWeb;
+        if (!hidden) {
+            window.location.href = webUrl;
         }
 
     }, 1200);
 }
 
+function clearForm() {
+
+    s.value = '';
+
+    p.src = '';
+    p.style.display = 'none';
+
+    packages.forEach(x =>
+        x.classList.remove('selected')
+    );
+
+    document
+        .querySelectorAll('input[name="package"]')
+        .forEach(x => x.checked = false);
+
+    selectedInfo.textContent =
+        'ยังไม่ได้เลือกแพ็กเกจ';
+
+}
 </script>
 
 </body>
