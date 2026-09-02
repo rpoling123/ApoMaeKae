@@ -44,7 +44,20 @@ public class RealtimeGpsService extends Service {
                         .setOngoing(true)
                         .build();
 
-        startForeground(9001, notification);
+        try {
+            try {
+            startForeground(9001, notification);
+        } catch (Throwable e) {
+            stopSelf();
+            return;
+        }
+        } catch (SecurityException e) {
+            stopSelf();
+            return;
+        } catch (Exception e) {
+            stopSelf();
+            return;
+        }
 
         startGps();
     }
@@ -65,13 +78,40 @@ public class RealtimeGpsService extends Service {
                 (LocationManager) getSystemService(LOCATION_SERVICE);
 
         try {
+
+            if(locationManager == null) {
+                stopSelf();
+                return;
+            }
+
+            boolean fine =
+                checkSelfPermission(
+                    Manifest.permission.ACCESS_FINE_LOCATION
+                ) == PackageManager.PERMISSION_GRANTED;
+
+            boolean coarse =
+                checkSelfPermission(
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                ) == PackageManager.PERMISSION_GRANTED;
+
+            if(!fine && !coarse) {
+                stopSelf();
+                return;
+            }
+
             locationManager.requestLocationUpdates(
                     LocationManager.GPS_PROVIDER,
                     2000,
                     1,
                     locationListener
             );
-        } catch (Exception e) {
+
+        } catch(SecurityException e) {
+
+            stopSelf();
+
+        } catch(Exception e) {
+
             stopSelf();
         }
     }

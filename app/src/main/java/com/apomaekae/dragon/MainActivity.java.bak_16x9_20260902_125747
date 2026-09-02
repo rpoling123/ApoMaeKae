@@ -1,7 +1,4 @@
 package com.apomaekae.dragon;
-import android.net.Uri;
-import android.location.LocationManager;
-import android.location.Location;
 
 import android.Manifest;
 import android.app.Activity;
@@ -29,7 +26,6 @@ public class MainActivity extends Activity {
     private TextView licenseStatus, expiresText, remainText, gpsText, swipeCount;
     private TextView lastPageKeyView;
     private final Handler handler = new Handler();
-    private float screenScale16x9 = 1.0f;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private static final String CHANNEL = "apo_zone_alert";
     private TextToSpeech zoneTts;
@@ -76,29 +72,7 @@ public class MainActivity extends Activity {
         } catch (Exception ignored) {}
     }
 
-    
-    private void setup16x9() {
-        try {
-            android.util.DisplayMetrics dm = getResources().getDisplayMetrics();
-
-            float width = dm.widthPixels;
-            float height = dm.heightPixels;
-
-            float targetHeight = width * 9.0f / 16.0f;
-
-            if (height > targetHeight) {
-                screenScale16x9 = targetHeight / height;
-            } else {
-                screenScale16x9 = 1.0f;
-            }
-
-        } catch (Exception ignored) {
-            screenScale16x9 = 1.0f;
-        }
-    }
-
-private void base() {
-        setup16x9();
+    private void base() {
         FrameLayout frame = new FrameLayout(this);
         ImageView bg = new ImageView(this);
         bg.setScaleType(ImageView.ScaleType.CENTER_CROP);
@@ -108,7 +82,7 @@ private void base() {
         ScrollView scroll = new ScrollView(this);
         root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setPadding(18,12,18,18);
+        root.setPadding(18,18,18,24);
         scroll.addView(root);
         frame.addView(scroll, new FrameLayout.LayoutParams(-1,-1));
         setContentView(frame);
@@ -195,12 +169,12 @@ private void base() {
     private void showDragonPage() {
         base();
         addLastPageKeyBox();
-        addTitle("🌧️🐉 APO MAEKAE V9.1 • ",24,Gravity.CENTER);
-        addText("สถานะ: 🟢 กำลังอิน • เลือก 1 โซน",17,Gravity.LEFT);
+        addTitle("🌧️🐉 APO MAEKAE V9.1 • มังกร+อินสาย",24,Gravity.CENTER);
+        addText("สถานะมังกร+อินสาย: 🟢 กำลังอิน • เลือก 1 โซน",17,Gravity.LEFT);
         gpsText=text("GPS: กำลังอ่านตำแหน่ง | 🟢 ตรวจโซน • พัก 10 นาที",16,Gravity.LEFT);
         root.addView(gpsText,full());
 
-        Button on=button("🌧️: ON");
+        Button on=button("🌧️🐉 มังกร+อินสาย: ON");
         Button check=button("🔍 ตรวจสอบโซน");
         Button pause=button("⏸ อินพัก10นาทีโซนชั้นใน");
         Button outer=button("🌆 อินรอบนอกเมือง");
@@ -229,7 +203,7 @@ private void base() {
         }
         root.addView(list,full());
 
-        on.setOnClickListener(v->notifyAlert("","เปิดใช้งานแล้ว"));
+        on.setOnClickListener(v->notifyAlert("มังกร+อินสาย","เปิดใช้งานแล้ว"));
         check.setOnClickListener(v->{
             speakZone("ตรวจสอบโซน");
             startGuard();
@@ -437,21 +411,8 @@ private void base() {
     }
 
     private LinearLayout card(){LinearLayout c=new LinearLayout(this);c.setOrientation(LinearLayout.VERTICAL);c.setPadding(16,16,16,16);c.setBackgroundColor(0xEEF8FAF8);root.addView(c,full());return c;}
-    
-    private void compactButton(Button b) {
-        b.setMinHeight(0);
-        b.setMinimumHeight(0);
-        b.setPadding(8,4,8,4);
-    }
-
-private Button button(String s){
-        Button b=new Button(this);
-        b.setText(s);
-        b.setTextSize(15);
-        compactButton(b);
-        return b;
-    }
-    private TextView text(String s,float z,int g){TextView t=new TextView(this);t.setText(s);t.setTextSize(z);t.setGravity(g);t.setTextColor(Color.rgb(15,85,45));t.setPadding(4,5,4,5);return t;}
+    private Button button(String s){Button b=new Button(this);b.setText(s);b.setTextSize(16);return b;}
+    private TextView text(String s,float z,int g){TextView t=new TextView(this);t.setText(s);t.setTextSize(z);t.setGravity(g);t.setTextColor(Color.rgb(15,85,45));t.setPadding(4,7,4,7);return t;}
     private void addTitle(String s,float z,int g){root.addView(text(s,z,g),full());}
     private void addText(String s,float z,int g){root.addView(text(s,z,g),full());}
     private LinearLayout.LayoutParams full(){return new LinearLayout.LayoutParams(-1,-2);}
@@ -492,132 +453,4 @@ private Button button(String s){
 
         super.onDestroy();
     }
-
-
-    // ============================================================
-    // APO MAE KAE : เปิด Google Maps ด้วย GPS จริงของมือถือ
-    // ============================================================
-    private void openGoogleMapsFromGps() {
-
-        if (android.os.Build.VERSION.SDK_INT >= 23 &&
-            checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)
-                != PackageManager.PERMISSION_GRANTED) {
-
-            requestPermissions(
-                new String[]{
-                    Manifest.permission.ACCESS_FINE_LOCATION,
-                    Manifest.permission.ACCESS_COARSE_LOCATION
-                },
-                9001
-            );
-            return;
-        }
-
-        try {
-            LocationManager lm =
-                (LocationManager)getSystemService(LOCATION_SERVICE);
-
-            Location location = null;
-
-            if (lm != null) {
-                try {
-                    if (lm.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-                        location = lm.getLastKnownLocation(
-                            LocationManager.GPS_PROVIDER
-                        );
-                    }
-                } catch (Exception ignored) {}
-
-                if (location == null) {
-                    try {
-                        location = lm.getLastKnownLocation(
-                            LocationManager.NETWORK_PROVIDER
-                        );
-                    } catch (Exception ignored) {}
-                }
-            }
-
-            if (location != null) {
-
-                double lat = location.getLatitude();
-                double lon = location.getLongitude();
-
-                Uri uri = Uri.parse(
-                    "google.navigation:q=" +
-                    lat + "," + lon
-                );
-
-                Intent intent = new Intent(
-                    Intent.ACTION_VIEW,
-                    uri
-                );
-
-                intent.setPackage("com.google.android.apps.maps");
-
-                try {
-                    startActivity(intent);
-                } catch (Exception e) {
-
-                    Intent fallback = new Intent(
-                        Intent.ACTION_VIEW,
-                        Uri.parse(
-                            "https://www.google.com/maps/@"
-                            + lat + "," + lon + ",17z"
-                        )
-                    );
-
-                    startActivity(fallback);
-                }
-
-            } else {
-
-                // ไม่มี GPS ล่าสุด ให้เปิด Maps ที่ตำแหน่งปัจจุบัน
-                Intent intent = new Intent(
-                    Intent.ACTION_VIEW,
-                    Uri.parse("geo:0,0?q=ตำแหน่งปัจจุบัน")
-                );
-
-                intent.setPackage("com.google.android.apps.maps");
-
-                try {
-                    startActivity(intent);
-                } catch (Exception e) {
-                    startActivity(new Intent(
-                        Intent.ACTION_VIEW,
-                        Uri.parse("https://maps.google.com")
-                    ));
-                }
-            }
-
-        } catch (Exception e) {
-
-            try {
-                startActivity(new Intent(
-                    Intent.ACTION_VIEW,
-                    Uri.parse("https://maps.google.com")
-                ));
-            } catch (Exception ignored) {}
-        }
-    }
-
-    @Override
-    public void onRequestPermissionsResult(
-        int requestCode,
-        String[] permissions,
-        int[] grantResults
-    ) {
-        super.onRequestPermissionsResult(
-            requestCode,
-            permissions,
-            grantResults
-        );
-
-        if (requestCode == 9001 &&
-            grantResults.length > 0 &&
-            grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-
-            openGoogleMapsFromGps();
-        }
-    }
-
 }

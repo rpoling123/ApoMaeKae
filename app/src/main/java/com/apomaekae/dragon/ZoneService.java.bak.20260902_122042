@@ -1,0 +1,504 @@
+package com.apomaekae.dragon;
+
+import android.app.*;
+import android.content.*;
+import android.location.*;
+import android.os.*;
+import android.speech.tts.TextToSpeech;
+import org.json.*;
+import java.io.*;
+import java.util.*;
+
+public class ZoneService extends Service implements LocationListener {
+
+    private JSONArray groups;
+    private NotificationManager nm;
+    private TextToSpeech tts;
+
+    /*
+     * STATE
+     * -1 = ยังไม่เริ่มตรวจ
+     *  0 = อยู่ในโซนปกติ
+     *  1 = อยู่ในโซน แต่ใกล้เส้นเขต <= 100 เมตร
+     *  2 = ออกนอกโซน
+     */
+    private int lastState = -1;
+    private String lastHit = "";
+
+    private static final double WARNING_DISTANCE_METERS = 100.0;
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+
+        nm = (NotificationManager)getSystemService(NOTIFICATION_SERVICE);
+
+        /*
+         * Foreground service notification จำเป็นสำหรับ Android
+         * แต่การแจ้งเตือนเข้า/ออกโซนจะไม่สร้าง Popup
+         */
+        if (Build.VERSION.SDK_INT >= 26) {
+            NotificationChannel c = new NotificationChannel(
+                "guard",
+                "Zone Guard",
+                NotificationManager.IMPORTANCE_LOW
+            );
+
+            c.setDescription("APO MAEKAE GPS Zone Guard");
+
+            nm.createNotificationChannel(c);
+        }
+
+        tts = new TextToSpeech(this, status -> {
+            if (status == TextToSpeech.SUCCESS) {
+                int r = tts.setLanguage(new Locale("th", "TH"));
+
+                if (r == TextToSpeech.LANG_MISSING_DATA ||
+                    r == TextToSpeech.LANG_NOT_SUPPORTED) {
+                    tts.setLanguage(Locale.getDefault());
+                }
+            }
+        });
+
+        loadZones();
+    }
+
+    private void loadZones() {
+        try {
+            InputStream in = getAssets().open("zones.json");
+
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+
+            byte[] buffer = new byte[4096];
+            int n;
+
+            while ((n = in.read(buffer)) != -1) {
+                out.write(buffer, 0, n);
+            }
+
+            in.close();
+
+            String json = out.toString("UTF-8");
+
+            groups = new JSONObject(json).getJSONArray("groups");
+
+        } catch (Exception e) {
+            groups = new JSONArray();
+        }
+    }
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+
+        Notification n;
+
+        if (Build.VERSION.SDK_INT >= 26) {
+
+            n = new Notification.Builder(this, "guard")
+                .setContentTitle("อาโปแมะเก๊ • ZONE GUARD")
+                .setContentText("กำลังตรวจตำแหน่ง GPS")
+                .setSmallIcon(android.R.drawable.ic_menu_mylocation)
+                .setOngoing(true)
+                .setSilent(true)
+                .build();
+
+        } else {
+
+            n = new Notification.Builder(this)
+                .setContentTitle("อาโปแมะเก๊ • ZONE GUARD")
+                .setContentText("กำลังตรวจตำแหน่ง GPS")
+                .setSmallIcon(android.R.drawable.ic_menu_mylocation)
+                .setOngoing(true)
+                .build();
+        }
+
+        /*
+         * Notification นี้เป็นของ Foreground Service
+         * ไม่ใช่ Popup แจ้งเตือนเข้า/ออกโซน
+         */
+        startForeground(77, n);
+
+        try {
+
+            LocationManager lm =
+                (LocationManager)getSystemService(LOCATION_SERVICE);
+
+            if (checkSelfPermission(
+                    android.Manifest.permission.ACCESS_FINE_LOCATION)
+                    == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+
+                lm.requestLocationUpdates(
+                    LocationManager.GPS_PROVIDER,
+                    3000,
+                    5,
+                    this
+                );
+            }
+
+        } catch (Exception ignored) {}
+
+        return START_STICKY;
+    }
+
+    @Override
+    public void onLocationChanged(Location location) {
+
+        if (groups == null || groups.length() == 0) {
+            return;
+        }
+
+        double lat = location.getLatitude();
+        double lon = location.getLongitude();
+
+        boolean inside = false;
+        double nearestDistance = Double.MAX_VALUE;
+        String hit = "";
+
+        SharedPreferences p =
+            getSharedPreferences("z", MODE_PRIVATE);
+
+        try {
+
+            for (int g = 0; g < groups.length(); g++) {
+
+                JSONObject group = groups.getJSONObject(g);
+
+                JSONArray polygons =
+                    group.getJSONArray("polygons");
+
+                for (int k = 0; k < polygons.length(); k++) {
+
+                    String prefKey = "z_" + g + "_" + k;
+
+                    boolean selected =
+                        p.getBoolean(prefKey, false);
+
+                    if (!p.contains(prefKey) &&
+                        p.getBoolean("g" + g, true)) {
+
+                        selected = true;
+                    }
+
+                    if (!selected) {
+                        continue;
+                    }
+
+                    JSONObject poly =
+                        polygons.getJSONObject(k);
+
+                    JSONArray points =
+                        poly.getJSONArray("points");
+
+                    boolean thisInside =
+                        pointInsidePolygon(lat, lon, points);
+
+                    double distance =
+                        distanceToPolygonMeters(lat, lon, points);
+
+                    if (distance < nearestDistance) {
+                        nearestDistance = distance;
+                    }
+
+                    if (thisInside) {
+
+                        inside = true;
+
+                        hit = poly.optString(
+                            "name",
+                            group.optString("name", "โซน")
+                        );
+                    }
+                }
+            }
+
+        } catch (Exception ignored) {}
+
+        /*
+         * สถานะใหม่
+         */
+        int newState;
+
+        if (inside) {
+
+            if (nearestDistance <= WARNING_DISTANCE_METERS) {
+                newState = 1;
+            } else {
+                newState = 0;
+            }
+
+        } else {
+
+            newState = 2;
+        }
+
+        /*
+         * ครั้งแรกที่เริ่ม GPS
+         * ให้ตั้งสถานะก่อน ไม่พูดซ้ำทันที
+         */
+        if (lastState == -1) {
+
+            lastState = newState;
+            lastHit = hit;
+
+            if (newState == 1) {
+                speak("ระวัง อีกประมาณ 100 เมตรจะออกจากโซน");
+            }
+
+            return;
+        }
+
+        /*
+         * อยู่ในโซนปกติ
+         * -> ใกล้เส้น 100 เมตร
+         */
+        if (newState == 1 && lastState != 1) {
+
+            speak(
+                "ระวัง ใกล้ออกจากโซนแล้ว " +
+                "เหลือประมาณ " +
+                Math.round(nearestDistance) +
+                " เมตร"
+            );
+        }
+
+        /*
+         * ใกล้เส้น
+         * -> กลับเข้าด้านในมากขึ้น
+         *
+         * ไม่พูดซ้ำ
+         */
+        if (newState == 0 && lastState == 1) {
+
+            // ไม่แจ้งเตือน
+        }
+
+        /*
+         * อยู่ในโซน
+         * -> ออกนอกเส้นจริง
+         */
+        if (newState == 2 && lastState != 2) {
+
+            speak(
+                "แจ้งเตือน คุณออกนอกโซนแล้ว"
+            );
+        }
+
+        /*
+         * ออกนอกโซน
+         * -> กลับเข้าโซน
+         */
+        if (newState != 2 &&
+            lastState == 2) {
+
+            speak(
+                "เข้าโซนแล้ว " +
+                (hit.isEmpty() ? "" : hit)
+            );
+        }
+
+        lastState = newState;
+
+        if (!hit.isEmpty()) {
+            lastHit = hit;
+        }
+    }
+
+    /*
+     * ตรวจว่าจุด GPS อยู่ใน Polygon หรือไม่
+     */
+    private boolean pointInsidePolygon(
+        double lat,
+        double lon,
+        JSONArray points
+    ) throws Exception {
+
+        int n = points.length();
+
+        if (n < 3) {
+            return false;
+        }
+
+        boolean inside = false;
+
+        for (int i = 0, j = n - 1; i < n; j = i++) {
+
+            JSONArray pi = points.getJSONArray(i);
+            JSONArray pj = points.getJSONArray(j);
+
+            double yi = pi.getDouble(0);
+            double xi = pi.getDouble(1);
+
+            double yj = pj.getDouble(0);
+            double xj = pj.getDouble(1);
+
+            boolean intersect =
+                ((yi > lat) != (yj > lat)) &&
+                (
+                    lon <
+                    (xj - xi) *
+                    (lat - yi) /
+                    ((yj - yi) + 0.000000000001)
+                    + xi
+                );
+
+            if (intersect) {
+                inside = !inside;
+            }
+        }
+
+        return inside;
+    }
+
+    /*
+     * หาระยะจาก GPS ถึง "เส้นเขต" จริง
+     * ไม่ใช่แค่ระยะถึงจุด vertex
+     */
+    private double distanceToPolygonMeters(
+        double lat,
+        double lon,
+        JSONArray points
+    ) throws Exception {
+
+        int n = points.length();
+
+        if (n < 2) {
+            return Double.MAX_VALUE;
+        }
+
+        double min = Double.MAX_VALUE;
+
+        for (int i = 0; i < n; i++) {
+
+            int j = (i + 1) % n;
+
+            JSONArray a = points.getJSONArray(i);
+            JSONArray b = points.getJSONArray(j);
+
+            double d = distanceToSegmentMeters(
+                lat,
+                lon,
+                a.getDouble(0),
+                a.getDouble(1),
+                b.getDouble(0),
+                b.getDouble(1)
+            );
+
+            if (d < min) {
+                min = d;
+            }
+        }
+
+        return min;
+    }
+
+    /*
+     * ระยะจากจุด GPS ถึงเส้นตรงระหว่าง A-B
+     */
+    private double distanceToSegmentMeters(
+        double lat,
+        double lon,
+        double lat1,
+        double lon1,
+        double lat2,
+        double lon2
+    ) {
+
+        double metersLat = 111320.0;
+
+        double metersLon =
+            111320.0 *
+            Math.cos(Math.toRadians(lat));
+
+        double px = lon * metersLon;
+        double py = lat * metersLat;
+
+        double ax = lon1 * metersLon;
+        double ay = lat1 * metersLat;
+
+        double bx = lon2 * metersLon;
+        double by = lat2 * metersLat;
+
+        double dx = bx - ax;
+        double dy = by - ay;
+
+        if (dx == 0 && dy == 0) {
+
+            return Math.sqrt(
+                (px - ax) * (px - ax) +
+                (py - ay) * (py - ay)
+            );
+        }
+
+        double t =
+            ((px - ax) * dx +
+             (py - ay) * dy) /
+            (dx * dx + dy * dy);
+
+        t = Math.max(0, Math.min(1, t));
+
+        double cx = ax + t * dx;
+        double cy = ay + t * dy;
+
+        return Math.sqrt(
+            (px - cx) * (px - cx) +
+            (py - cy) * (py - cy)
+        );
+    }
+
+    /*
+     * เสียงอย่างเดียว
+     * ไม่มี Dialog
+     * ไม่มี Popup
+     * ไม่มี Notification แจ้งเตือนซ้ำ
+     */
+    private void speak(String message) {
+
+        try {
+
+            if (tts == null) {
+                return;
+            }
+
+            tts.speak(
+                message,
+                TextToSpeech.QUEUE_FLUSH,
+                null,
+                "apo_zone_" + System.currentTimeMillis()
+            );
+
+        } catch (Exception ignored) {}
+    }
+
+    @Override
+    public IBinder onBind(Intent intent) {
+        return null;
+    }
+
+    @Override
+    public void onProviderEnabled(String provider) {}
+
+    @Override
+    public void onProviderDisabled(String provider) {}
+
+    @Override
+    public void onStatusChanged(
+        String provider,
+        int status,
+        Bundle extras
+    ) {}
+
+    @Override
+    public void onDestroy() {
+
+        try {
+
+            if (tts != null) {
+                tts.stop();
+                tts.shutdown();
+            }
+
+        } catch (Exception ignored) {}
+
+        super.onDestroy();
+    }
+}

@@ -1,7 +1,4 @@
 package com.apomaekae.dragon;
-import android.net.Uri;
-import android.location.LocationManager;
-import android.location.Location;
 
 import android.Manifest;
 import android.app.Activity;
@@ -13,7 +10,6 @@ import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
-import android.speech.tts.TextToSpeech;
 import android.text.InputType;
 import android.view.Gravity;
 import android.widget.*;
@@ -27,12 +23,9 @@ public class MainActivity extends Activity {
     private LinearLayout root;
     private EditText keyEdit;
     private TextView licenseStatus, expiresText, remainText, gpsText, swipeCount;
-    private TextView lastPageKeyView;
     private final Handler handler = new Handler();
-    private float screenScale16x9 = 1.0f;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private static final String CHANNEL = "apo_zone_alert";
-    private TextToSpeech zoneTts;
 
     // 13 มังกร รวมมังกรพิเศษ
     private static final String[] DRAGONS = {
@@ -46,59 +39,9 @@ public class MainActivity extends Activity {
         createNotificationChannel();
         requestPermissionsIfNeeded();
         showLicensePage();
-        initZoneTts();
     }
 
-    private void initZoneTts() {
-        zoneTts = new TextToSpeech(this, status -> {
-            if (status == TextToSpeech.SUCCESS) {
-                int result = zoneTts.setLanguage(new Locale("th", "TH"));
-                if (result == TextToSpeech.LANG_MISSING_DATA ||
-                    result == TextToSpeech.LANG_NOT_SUPPORTED) {
-                    zoneTts.setLanguage(Locale.getDefault());
-                }
-                zoneTts.setSpeechRate(0.95f);
-                zoneTts.setPitch(1.0f);
-            }
-        });
-    }
-
-    private void speakZone(String text) {
-        try {
-            if (zoneTts != null) {
-                zoneTts.speak(
-                    text,
-                    TextToSpeech.QUEUE_FLUSH,
-                    null,
-                    "zone_select_" + System.currentTimeMillis()
-                );
-            }
-        } catch (Exception ignored) {}
-    }
-
-    
-    private void setup16x9() {
-        try {
-            android.util.DisplayMetrics dm = getResources().getDisplayMetrics();
-
-            float width = dm.widthPixels;
-            float height = dm.heightPixels;
-
-            float targetHeight = width * 9.0f / 16.0f;
-
-            if (height > targetHeight) {
-                screenScale16x9 = targetHeight / height;
-            } else {
-                screenScale16x9 = 1.0f;
-            }
-
-        } catch (Exception ignored) {
-            screenScale16x9 = 1.0f;
-        }
-    }
-
-private void base() {
-        setup16x9();
+    private void base() {
         FrameLayout frame = new FrameLayout(this);
         ImageView bg = new ImageView(this);
         bg.setScaleType(ImageView.ScaleType.CENTER_CROP);
@@ -108,7 +51,7 @@ private void base() {
         ScrollView scroll = new ScrollView(this);
         root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setPadding(18,12,18,18);
+        root.setPadding(18,18,18,24);
         scroll.addView(root);
         frame.addView(scroll, new FrameLayout.LayoutParams(-1,-1));
         setContentView(frame);
@@ -194,16 +137,15 @@ private void base() {
 
     private void showDragonPage() {
         base();
-        addLastPageKeyBox();
-        addTitle("🌧️🐉 APO MAEKAE V9.1 • ",24,Gravity.CENTER);
-        addText("สถานะ: 🟢 กำลังอิน • เลือก 1 โซน",17,Gravity.LEFT);
+        addTitle("🌧️🐉 APO MAEKAE V9.1 • มังกร+อินสาย",24,Gravity.CENTER);
+        addText("สถานะมังกร+อินสาย: 🟢 กำลังอิน • เลือก 1 โซน",17,Gravity.LEFT);
         gpsText=text("GPS: กำลังอ่านตำแหน่ง | 🟢 ตรวจโซน • พัก 10 นาที",16,Gravity.LEFT);
         root.addView(gpsText,full());
 
-        Button on=button("🌧️: ON");
-        Button check=button("🔍 ตรวจสอบโซน");
-        Button pause=button("⏸ อินพัก10นาทีโซนชั้นใน");
-        Button outer=button("🌆 อินรอบนอกเมือง");
+        Button on=button("🌧️🐉 มังกร+อินสาย: ON");
+        Button check=button("▶ ตรวจโซนกำลังทำงาน");
+        Button pause=button("⏸ หยุดอิน / พัก 10 นาที");
+        Button outer=button("🟢 อินรอบนอก");
         Button rain=button("🌧️ อินหน้าฝน");
         Button maps=button("🗺️ เปิด GOOGLE MAPS");
         root.addView(on,full()); root.addView(check,full()); root.addView(pause,full());
@@ -216,167 +158,16 @@ private void base() {
             CheckBox cb=new CheckBox(this);
             cb.setText("🌧️🐉 "+d);
             cb.setTextSize(17);
-
-            cb.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                if (isChecked) {
-                    speakZone("เลือก " + d);
-                } else {
-                    speakZone("ยกเลิก " + d);
-                }
-            });
-
             list.addView(cb,full());
         }
         root.addView(list,full());
 
-        on.setOnClickListener(v->notifyAlert("","เปิดใช้งานแล้ว"));
-        check.setOnClickListener(v->{
-            speakZone("ตรวจสอบโซน");
-            startGuard();
-        });
-        pause.setOnClickListener(v->{
-            speakZone("อินพักสิบ นาที โซนชั้นใน");
-            notifyAlert("อินพัก10นาทีโซนชั้นใน","พัก 10 นาที");
-        });
-        outer.setOnClickListener(v->{
-            speakZone("อินรอบนอกเมือง");
-            notifyAlert("อินรอบนอกเมือง","เปิดใช้งานแล้ว");
-        });
-        rain.setOnClickListener(v->{
-            speakZone("อินหน้าฝน");
-            notifyAlert("อินหน้าฝน","เปิดใช้งานแล้ว");
-        });
+        on.setOnClickListener(v->notifyAlert("มังกร+อินสาย","เปิดใช้งานแล้ว"));
+        check.setOnClickListener(v->startGuard());
+        pause.setOnClickListener(v->notifyAlert("อินสาย","พัก 10 นาที"));
+        outer.setOnClickListener(v->notifyAlert("อินรอบนอก","เปิดใช้งานแล้ว"));
+        rain.setOnClickListener(v->notifyAlert("อินหน้าฝน","เปิดใช้งานแล้ว"));
         maps.setOnClickListener(v->openMaps());
-    }
-
-
-    private void addLastPageKeyBox() {
-
-        LinearLayout row = new LinearLayout(this);
-        row.setOrientation(LinearLayout.HORIZONTAL);
-        row.setGravity(Gravity.RIGHT);
-        row.setPadding(0, 0, 0, 4);
-
-        lastPageKeyView = new TextView(this);
-        lastPageKeyView.setTextSize(13);
-        lastPageKeyView.setTextColor(Color.rgb(0,105,55));
-        lastPageKeyView.setTypeface(null, android.graphics.Typeface.BOLD);
-        lastPageKeyView.setGravity(Gravity.RIGHT);
-        lastPageKeyView.setPadding(12,8,12,8);
-        lastPageKeyView.setBackgroundColor(Color.rgb(235,250,240));
-
-        row.addView(
-            lastPageKeyView,
-            new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            )
-        );
-
-        root.addView(
-            row,
-            0,
-            new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            )
-        );
-
-        updateLastPageKeyBox();
-
-        handler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                if (lastPageKeyView != null) {
-                    updateLastPageKeyBox();
-                    handler.postDelayed(this,1000);
-                }
-            }
-        },1000);
-    }
-
-    private void updateLastPageKeyBox() {
-
-        if (lastPageKeyView == null) return;
-
-        try {
-
-            String key = LicenseClient.getKey(this);
-            String exp = LicenseClient.getExpires(this);
-
-            if (key == null || key.trim().isEmpty()) {
-                lastPageKeyView.setText("🔑 KEY: ยังไม่มี");
-                lastPageKeyView.setTextColor(Color.rgb(180,80,0));
-                return;
-            }
-
-            if (exp == null || exp.trim().isEmpty()) {
-                lastPageKeyView.setText(
-                    "🔑 " + key +
-                    "\n🟡 ยังไม่มีวันหมดอายุ"
-                );
-                return;
-            }
-
-            Date expiry = parseDate(exp);
-            long left = expiry.getTime() - System.currentTimeMillis();
-
-            Calendar c = Calendar.getInstance();
-            c.setTime(expiry);
-
-            String expiryText = String.format(
-                Locale.getDefault(),
-                "%02d/%02d/%04d %02d:%02d",
-                c.get(Calendar.DAY_OF_MONTH),
-                c.get(Calendar.MONTH)+1,
-                c.get(Calendar.YEAR)+543,
-                c.get(Calendar.HOUR_OF_DAY),
-                c.get(Calendar.MINUTE)
-            );
-
-            if (left <= 0) {
-
-                lastPageKeyView.setText(
-                    "🔴 KEY หมดอายุ" +
-                    "\n🔑 " + key +
-                    "\n📅 " + expiryText
-                );
-
-                lastPageKeyView.setTextColor(Color.rgb(190,0,0));
-                return;
-            }
-
-            long total = left / 1000;
-
-            long days = total / 86400;
-            total %= 86400;
-
-            long hours = total / 3600;
-            total %= 3600;
-
-            long minutes = total / 60;
-            long seconds = total % 60;
-
-            lastPageKeyView.setText(
-                "🟢 KEY ใช้งานอยู่" +
-                "\n🔑 " + key +
-                "\n📅 หมดอายุ " + expiryText +
-                "\n⏳ " +
-                days + "วัน " +
-                hours + "ชม. " +
-                minutes + "น. " +
-                seconds + "วิ."
-            );
-
-            lastPageKeyView.setTextColor(Color.rgb(0,105,55));
-
-        } catch(Exception e) {
-
-            lastPageKeyView.setText(
-                "🔑 KEY" +
-                "\n📅 หมดอายุ: ตรวจสอบ..."
-            );
-        }
     }
 
     private void showSwipeStats() {
@@ -437,21 +228,8 @@ private void base() {
     }
 
     private LinearLayout card(){LinearLayout c=new LinearLayout(this);c.setOrientation(LinearLayout.VERTICAL);c.setPadding(16,16,16,16);c.setBackgroundColor(0xEEF8FAF8);root.addView(c,full());return c;}
-    
-    private void compactButton(Button b) {
-        b.setMinHeight(0);
-        b.setMinimumHeight(0);
-        b.setPadding(8,4,8,4);
-    }
-
-private Button button(String s){
-        Button b=new Button(this);
-        b.setText(s);
-        b.setTextSize(15);
-        compactButton(b);
-        return b;
-    }
-    private TextView text(String s,float z,int g){TextView t=new TextView(this);t.setText(s);t.setTextSize(z);t.setGravity(g);t.setTextColor(Color.rgb(15,85,45));t.setPadding(4,5,4,5);return t;}
+    private Button button(String s){Button b=new Button(this);b.setText(s);b.setTextSize(16);return b;}
+    private TextView text(String s,float z,int g){TextView t=new TextView(this);t.setText(s);t.setTextSize(z);t.setGravity(g);t.setTextColor(Color.rgb(15,85,45));t.setPadding(4,7,4,7);return t;}
     private void addTitle(String s,float z,int g){root.addView(text(s,z,g),full());}
     private void addText(String s,float z,int g){root.addView(text(s,z,g),full());}
     private LinearLayout.LayoutParams full(){return new LinearLayout.LayoutParams(-1,-2);}
@@ -478,146 +256,5 @@ private Button button(String s){
     private void openUrl(String u){try{startActivity(new Intent(Intent.ACTION_VIEW,android.net.Uri.parse(u)));}catch(Exception e){Toast.makeText(this,"เปิดไม่ได้",Toast.LENGTH_SHORT).show();}}
     private void openMaps(){openUrl("https://maps.google.com/?q=13.736351,100.571805");}
 
-    @Override protected void onDestroy(){
-        handler.removeCallbacksAndMessages(null);
-        executor.shutdownNow();
-
-        try {
-            if (zoneTts != null) {
-                zoneTts.stop();
-                zoneTts.shutdown();
-                zoneTts = null;
-            }
-        } catch (Exception ignored) {}
-
-        super.onDestroy();
-    }
-
-
-    // ============================================================
-    // APO MAE KAE : เปิด Google Maps ด้วย GPS จริงของมือถือ
-    // ============================================================
-    private void openGoogleMapsFromGps() {
-
-        if (android.os.Build.VERSION.SDK_INT >= 23 &&
-            checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)
-                != PackageManager.PERMISSION_GRANTED) {
-
-            requestPermissions(
-                new String[]{
-                    Manifest.permission.ACCESS_FINE_LOCATION,
-                    Manifest.permission.ACCESS_COARSE_LOCATION
-                },
-                9001
-            );
-            return;
-        }
-
-        try {
-            LocationManager lm =
-                (LocationManager)getSystemService(LOCATION_SERVICE);
-
-            Location location = null;
-
-            if (lm != null) {
-                try {
-                    if (lm.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-                        location = lm.getLastKnownLocation(
-                            LocationManager.GPS_PROVIDER
-                        );
-                    }
-                } catch (Exception ignored) {}
-
-                if (location == null) {
-                    try {
-                        location = lm.getLastKnownLocation(
-                            LocationManager.NETWORK_PROVIDER
-                        );
-                    } catch (Exception ignored) {}
-                }
-            }
-
-            if (location != null) {
-
-                double lat = location.getLatitude();
-                double lon = location.getLongitude();
-
-                Uri uri = Uri.parse(
-                    "google.navigation:q=" +
-                    lat + "," + lon
-                );
-
-                Intent intent = new Intent(
-                    Intent.ACTION_VIEW,
-                    uri
-                );
-
-                intent.setPackage("com.google.android.apps.maps");
-
-                try {
-                    startActivity(intent);
-                } catch (Exception e) {
-
-                    Intent fallback = new Intent(
-                        Intent.ACTION_VIEW,
-                        Uri.parse(
-                            "https://www.google.com/maps/@"
-                            + lat + "," + lon + ",17z"
-                        )
-                    );
-
-                    startActivity(fallback);
-                }
-
-            } else {
-
-                // ไม่มี GPS ล่าสุด ให้เปิด Maps ที่ตำแหน่งปัจจุบัน
-                Intent intent = new Intent(
-                    Intent.ACTION_VIEW,
-                    Uri.parse("geo:0,0?q=ตำแหน่งปัจจุบัน")
-                );
-
-                intent.setPackage("com.google.android.apps.maps");
-
-                try {
-                    startActivity(intent);
-                } catch (Exception e) {
-                    startActivity(new Intent(
-                        Intent.ACTION_VIEW,
-                        Uri.parse("https://maps.google.com")
-                    ));
-                }
-            }
-
-        } catch (Exception e) {
-
-            try {
-                startActivity(new Intent(
-                    Intent.ACTION_VIEW,
-                    Uri.parse("https://maps.google.com")
-                ));
-            } catch (Exception ignored) {}
-        }
-    }
-
-    @Override
-    public void onRequestPermissionsResult(
-        int requestCode,
-        String[] permissions,
-        int[] grantResults
-    ) {
-        super.onRequestPermissionsResult(
-            requestCode,
-            permissions,
-            grantResults
-        );
-
-        if (requestCode == 9001 &&
-            grantResults.length > 0 &&
-            grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-
-            openGoogleMapsFromGps();
-        }
-    }
-
+    @Override protected void onDestroy(){handler.removeCallbacksAndMessages(null);executor.shutdownNow();super.onDestroy();}
 }
