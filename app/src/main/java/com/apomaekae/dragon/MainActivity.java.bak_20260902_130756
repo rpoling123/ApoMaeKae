@@ -49,44 +49,6 @@ public class MainActivity extends Activity {
         initZoneTts();
     }
 
-
-    // ==========================================================
-    // APO MAEKAE
-    // โหลด KML/KMZ จาก assets/zones
-    // ==========================================================
-    private String[] loadDragonKmlAssets() {
-
-        try {
-
-            return getAssets().list("zones");
-
-        } catch(Exception e) {
-
-            return new String[0];
-        }
-    }
-
-    private boolean hasDragonKml(String fileName) {
-
-        try {
-
-            String[] files =
-                getAssets().list("zones");
-
-            if(files == null)
-                return false;
-
-            for(String f : files) {
-
-                if(f.equalsIgnoreCase(fileName))
-                    return true;
-            }
-
-        } catch(Exception ignored) {}
-
-        return false;
-    }
-
     private void initZoneTts() {
         zoneTts = new TextToSpeech(this, status -> {
             if (status == TextToSpeech.SUCCESS) {
@@ -213,15 +175,17 @@ private void base() {
         addText("โซน: 13 มังกร • Buffer 500 เมตร • เสียงแจ้งเตือนภาษาไทย",17,Gravity.LEFT);
 
         Button rider=button("🏍️ เปิดแอป LINE MAN RIDER");
+        Button dragon=button("🌧️🐉 มังกร + อินสาย");
         Button maps=button("🗺️ เปิด GOOGLE MAPS");
         Button eta=button("⏱️ ETA / งานใกล้");
         Button stats=button("📊 สถิติการปัดงาน");
         Button exit=button("ออกจากระบบ");
 
-        root.addView(rider,full()); root.addView(maps,full());
+        root.addView(rider,full()); root.addView(dragon,full()); root.addView(maps,full());
         root.addView(eta,full()); root.addView(stats,full()); root.addView(exit,full());
 
         rider.setOnClickListener(v->openUrl("https://lineman.line.me/rider/"));
+        dragon.setOnClickListener(v->showDragonPage());
         maps.setOnClickListener(v->openMaps());
         eta.setOnClickListener(v->Toast.makeText(this,"ETA จาก GPS ปัจจุบัน",Toast.LENGTH_SHORT).show());
         stats.setOnClickListener(v->showSwipeStats());
@@ -230,6 +194,7 @@ private void base() {
 
     private void showDragonPage() {
         base();
+        addLastPageKeyBox();
         addTitle("🌧️🐉 APO MAEKAE V9.1 • ",24,Gravity.CENTER);
         addText("สถานะ: 🟢 กำลังอิน • เลือก 1 โซน",17,Gravity.LEFT);
         gpsText=text("GPS: กำลังอ่านตำแหน่ง | 🟢 ตรวจโซน • พัก 10 นาที",16,Gravity.LEFT);
@@ -263,7 +228,6 @@ private void base() {
             list.addView(cb,full());
         }
         root.addView(list,full());
-        addLastPageKeyBox();
 
         on.setOnClickListener(v->notifyAlert("","เปิดใช้งานแล้ว"));
         check.setOnClickListener(v->{
@@ -290,69 +254,45 @@ private void base() {
 
         LinearLayout row = new LinearLayout(this);
         row.setOrientation(LinearLayout.HORIZONTAL);
-        row.setGravity(Gravity.LEFT);
-        row.setPadding(0, 14, 0, 10);
+        row.setGravity(Gravity.RIGHT);
+        row.setPadding(0, 0, 0, 4);
 
         lastPageKeyView = new TextView(this);
-
-        lastPageKeyView.setTextSize(14);
-
-        lastPageKeyView.setTextColor(
-            Color.rgb(0,105,55)
-        );
-
-        lastPageKeyView.setTypeface(
-            null,
-            android.graphics.Typeface.BOLD
-        );
-
-        lastPageKeyView.setGravity(
-            Gravity.LEFT
-        );
-
-        lastPageKeyView.setPadding(
-            14,10,14,10
-        );
-
-        lastPageKeyView.setBackgroundColor(
-            Color.rgb(235,250,240)
-        );
+        lastPageKeyView.setTextSize(13);
+        lastPageKeyView.setTextColor(Color.rgb(0,105,55));
+        lastPageKeyView.setTypeface(null, android.graphics.Typeface.BOLD);
+        lastPageKeyView.setGravity(Gravity.RIGHT);
+        lastPageKeyView.setPadding(12,8,12,8);
+        lastPageKeyView.setBackgroundColor(Color.rgb(235,250,240));
 
         row.addView(
             lastPageKeyView,
             new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
             )
         );
 
         root.addView(
             row,
-            full()
+            0,
+            new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
         );
 
         updateLastPageKeyBox();
 
-        handler.postDelayed(
-            new Runnable() {
-
-                @Override
-                public void run() {
-
-                    if (lastPageKeyView != null) {
-
-                        updateLastPageKeyBox();
-
-                        handler.postDelayed(
-                            this,
-                            1000
-                        );
-                    }
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                if (lastPageKeyView != null) {
+                    updateLastPageKeyBox();
+                    handler.postDelayed(this,1000);
                 }
-
-            },
-            1000
-        );
+            }
+        },1000);
     }
 
     private void updateLastPageKeyBox() {
@@ -536,108 +476,7 @@ private Button button(String s){
     private String formatDate(String s){try{return new SimpleDateFormat("dd/MM/yyyy HH:mm:ss",Locale.getDefault()).format(parseDate(s));}catch(Exception e){return s;}}
     private Date parseDate(String s)throws Exception{String x=s;if(x.endsWith("Z"))x=x.substring(0,x.length()-1);x=x.replace("T"," ");if(x.contains("."))x=x.substring(0,x.indexOf('.'));if(x.length()>19)x=x.substring(0,19);return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss",Locale.US).parse(x);}
     private void openUrl(String u){try{startActivity(new Intent(Intent.ACTION_VIEW,android.net.Uri.parse(u)));}catch(Exception e){Toast.makeText(this,"เปิดไม่ได้",Toast.LENGTH_SHORT).show();}}
-    private void openMaps() {
-
-        try {
-
-            LocationManager lm =
-                (LocationManager)getSystemService(
-                    LOCATION_SERVICE
-                );
-
-            Location loc = null;
-
-            if (Build.VERSION.SDK_INT >= 23 &&
-                checkSelfPermission(
-                    Manifest.permission.ACCESS_FINE_LOCATION
-                ) != PackageManager.PERMISSION_GRANTED &&
-                checkSelfPermission(
-                    Manifest.permission.ACCESS_COARSE_LOCATION
-                ) != PackageManager.PERMISSION_GRANTED) {
-
-                requestPermissionsIfNeeded();
-
-            } else {
-
-                try {
-
-                    loc =
-                        lm.getLastKnownLocation(
-                            LocationManager.GPS_PROVIDER
-                        );
-
-                } catch (Exception ignored) {}
-
-                if (loc == null) {
-
-                    try {
-
-                        loc =
-                            lm.getLastKnownLocation(
-                                LocationManager.NETWORK_PROVIDER
-                            );
-
-                    } catch (Exception ignored) {}
-                }
-            }
-
-            Uri uri;
-
-            if (loc != null) {
-
-                uri = Uri.parse(
-                    "geo:" +
-                    loc.getLatitude() +
-                    "," +
-                    loc.getLongitude() +
-                    "?z=17"
-                );
-
-            } else {
-
-                uri = Uri.parse(
-                    "geo:0,0?z=17"
-                );
-            }
-
-            Intent mapsIntent =
-                new Intent(
-                    Intent.ACTION_VIEW,
-                    uri
-                );
-
-            mapsIntent.setPackage(
-                "com.google.android.apps.maps"
-            );
-
-            if (
-                mapsIntent.resolveActivity(
-                    getPackageManager()
-                ) != null
-            ) {
-
-                startActivity(mapsIntent);
-
-            } else {
-
-                Intent fallback =
-                    new Intent(
-                        Intent.ACTION_VIEW,
-                        uri
-                    );
-
-                startActivity(fallback);
-            }
-
-        } catch (Exception e) {
-
-            Toast.makeText(
-                this,
-                "เปิด Google Maps ไม่สำเร็จ",
-                Toast.LENGTH_SHORT
-            ).show();
-        }
-    }
+    private void openMaps(){openUrl("https://maps.google.com/?q=13.736351,100.571805");}
 
     @Override protected void onDestroy(){
         handler.removeCallbacksAndMessages(null);
