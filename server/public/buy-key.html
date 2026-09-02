@@ -1,1 +1,119 @@
-<!doctype html><html lang="th"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ซื้อ Key • ApoMaeKae V9.1</title><style>body{font-family:system-ui;margin:0;padding:18px;background:#071207}.w{max-width:720px;margin:auto}.c{background:white;border-radius:18px;padding:20px;margin:14px 0}.p{border:2px solid #ddd;border-radius:14px;padding:14px;margin:8px;display:inline-block}.on{border-color:#087f3e;background:#eafff0}.price{font-size:25px;font-weight:800;color:#087f3e}.b{width:100%;padding:13px;background:#087f3e;color:white;border:0;border-radius:10px;font-weight:700}.key{font-size:22px;font-weight:900;word-break:break-all;background:#eafff0;padding:12px}.qr{max-width:100%;max-height:420px}</style><div class=w><h1>🔑 APO MAEKAE V9.2.3 • ซื้อ Key</h1><div class=c><h2>เลือกแพ็กเกจ</h2><div class="p on" data-x=day onclick=s(this)>1 วัน<div class=price>฿5</div></div><div class=p data-x=week onclick=s(this)>7 วัน<div class=price>฿15</div></div><div class=p data-x=month onclick=s(this)>30 วัน<div class=price>฿39</div></div><button class=b onclick=go()>สร้าง Order เพื่อชำระเงิน</button></div><div class=c id=pay style=display:none><h2>💳 ชำระเงิน</h2><p>Order: <b id=oid></b></p><p>ยอด: <b id=amt></b></p><p><b>📱 สแกน QR นี้เพื่อโอนชำระเงิน</b></p><img class=qr src=/payment_qr.svg><p class="small">หลังโอนแล้ว ระบบจะตรวจสอบรายการและสร้าง KEY ให้อัตโนมัติเมื่อพบยอดชำระ</p><div id=st>🟡 รอตรวจสอบ</div></div></div><script>let plan="day",id="";function s(x){document.querySelectorAll(".p").forEach(e=>e.classList.remove("on"));x.classList.add("on");plan=x.dataset.x}async function go(){let j=await fetch("/api/order/create",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({plan})}).then(r=>r.json());if(j.error)return alert(j.error);id=j.orderId;oid.textContent=id;amt.textContent="฿"+j.price;pay.style.display="block";poll()}async function poll(){let j=await fetch("/api/order/"+id).then(r=>r.json()).catch(()=>null);if(j&&j.status==="paid"){st.innerHTML="✅ ชำระเงินสำเร็จ<br>Key:<div class=key>"+j.key+"</div>หมดอายุ: <b>"+new Date(j.expiresAt).toLocaleString("th-TH",{timeZone:"Asia/Bangkok"})+"</b>";return}setTimeout(poll,5000)}</script>
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ApoMaeKae - ซื้อ Key</title>
+<style>
+body{font-family:Arial,sans-serif;background:#f4f7f8;margin:0;padding:20px;color:#222}
+.card{max-width:520px;margin:auto;background:#fff;padding:24px;border-radius:20px;box-shadow:0 8px 30px #0002}
+h1{text-align:center}label{display:block;font-weight:bold;margin:16px 0 8px}
+input{width:100%;padding:13px;border:1px solid #ddd;border-radius:10px;box-sizing:border-box}
+.upload{border:2px dashed #aaa;padding:18px;border-radius:14px;text-align:center}
+#preview{display:none;width:100%;max-height:400px;object-fit:contain;margin-top:15px;border-radius:12px}
+.btn{width:100%;padding:15px;border:0;border-radius:12px;margin-top:15px;font-size:17px;font-weight:bold}
+.msg{background:#08f;color:#fff}.clear{background:#eee}
+.status{background:#e8f5e9;padding:12px;border-radius:12px;text-align:center}
+.note{font-size:13px;color:#666;line-height:1.6;margin-top:15px}
+</style>
+</head>
+<body>
+<div class="card">
+<h1>🔑 ซื้อ Key ApoMaeKae</h1>
+
+<div class="status">🟢 ระบบพร้อมรับการชำระเงิน</div>
+
+<label>👤 ชื่อ / Facebook</label>
+<input id="name" placeholder="กรอกชื่อ">
+
+<label>📧 อีเมล</label>
+<input id="email" type="email" placeholder="กรอกอีเมล">
+
+<label>📎 แนบสลิป</label>
+<div class="upload">
+เลือกภาพสลิป
+<input id="slip" type="file" accept="image/jpeg,image/png,image/webp">
+</div>
+
+<img id="preview">
+
+<button class="btn msg" onclick="send()">
+💬 ส่งข้อมูลเข้า Messenger
+</button>
+
+<button class="btn clear" onclick="clearForm()">
+ล้างข้อมูล
+</button>
+
+<div class="note">
+หลังเปิด Messenger ให้แนบสลิปในแชทอีกครั้ง
+เพราะเว็บไซต์ไม่สามารถแนบไฟล์เข้า Messenger
+อัตโนมัติผ่าน m.me ได้
+</div>
+</div>
+
+<script>
+const s=document.getElementById('slip');
+const p=document.getElementById('preview');
+
+s.onchange=()=>{
+ let f=s.files[0];
+ if(!f){
+   p.style.display='none';
+   return;
+ }
+ if(!f.type.startsWith('image/')){
+   alert('กรุณาเลือกไฟล์รูปภาพ');
+   s.value='';
+   return;
+ }
+ if(f.size>10*1024*1024){
+   alert('ไฟล์ต้องไม่เกิน 10 MB');
+   s.value='';
+   return;
+ }
+ let r=new FileReader();
+ r.onload=e=>{
+   p.src=e.target.result;
+   p.style.display='block';
+ };
+ r.readAsDataURL(f);
+};
+
+function send(){
+ let n=document.getElementById('name').value.trim();
+ let e=document.getElementById('email').value.trim();
+
+ if(!n){
+   alert('กรุณากรอกชื่อ');
+   return;
+ }
+
+ if(!s.files[0]){
+   alert('กรุณาเลือกสลิป');
+   return;
+ }
+
+ let t=new Date().toLocaleString('th-TH');
+
+ let m=
+ '🔑 ขอซื้อ Key ApoMaeKae%0A'+
+ '👤 ชื่อ: '+encodeURIComponent(n)+'%0A'+
+ '📧 อีเมล: '+encodeURIComponent(e||'-')+'%0A'+
+ '📎 มีสลิปพร้อมส่งในแชท%0A'+
+ '⏰ เวลา: '+encodeURIComponent(t);
+
+ location.href=
+ 'https://m.me/rpolingkang1234?text='+m;
+}
+
+function clearForm(){
+ document.getElementById('name').value='';
+ document.getElementById('email').value='';
+ s.value='';
+ p.src='';
+ p.style.display='none';
+}
+</script>
+</body>
+</html>
